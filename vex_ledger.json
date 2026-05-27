@@ -1,0 +1,82 @@
+{
+  "sessions": [
+    {
+      "timestamp": "2026-05-23T09:56:28.631672",
+      "type": "discovery",
+      "root": "C:\\Users\\aztre\\Desktop",
+      "folders_found": 221482
+    }
+  ],
+  "findings": [
+    {
+      "timestamp": "2026-05-23T09:56:31.464952",
+      "folder": "C:\\Users\\aztre\\Desktop",
+      "file_count": 15,
+      "subdirs": 64,
+      "sample_files": [
+        "Antigravity.lnk",
+        "BitTorrent Web.lnk",
+        "Cursor.lnk",
+        "desktop.ini",
+        "Docker Desktop.lnk",
+        "GPT4All.lnk",
+        "keys.txt",
+        "New folder (33).zip",
+        "New folder (36).zip",
+        "Raid Shadow Legends.lnk",
+        "Rosetta Legends Desktop.lnk",
+        "SimCity™ 3000 Unlimited.url"
+      ],
+      "summary": "[OpenRouter error: 404 Client Error: Not Found for url: https://openrouter.ai/api/v1/chat/completions]"
+    },
+    {
+      "timestamp": "2026-05-23T09:56:58.439108",
+      "folder": "C:\\Users\\aztre\\Desktop\\AdamWebsite",
+      "file_count": 3,
+      "subdirs": 0,
+      "sample_files": [
+        "index.html",
+        "script.js",
+        "styles.css"
+      ],
+      "summary": "[OpenRouter error: 404 Client Error: Not Found for url: https://openrouter.ai/api/v1/chat/completions]"
+    },
+    {
+      "timestamp": "2026-05-23T09:57:26.004651",
+      "folder": "C:\\Users\\aztre\\Desktop\\agent",
+      "file_count": 39,
+      "subdirs": 26,
+      "sample_files": [
+        ".env",
+        ".gitignore",
+        "andrew_bot.py",
+        "Andrew_Status_Report.docx",
+        "background_process_history.md",
+        "background_thinking.log",
+        "background_thoughts.py",
+        "background_worker_supervisor_setup.md",
+        "conversation_prompt.py",
+        "current_persona_backup.json",
+        "downloads_report.txt",
+        "issue_summary.md"
+      ],
+      "summary": "[OpenRouter error: 404 Client Error: Not Found for url: https://openrouter.ai/api/v1/chat/completions]"
+    },
+    {
+      "timestamp": "2026-05-23T09:57:53.765128",
+      "folder": "C:\\Users\\aztre\\Desktop\\agent\\.claude",
+      "file_count": 0,
+      "subdirs": 1,
+      "sample_files": [],
+      "summary": "[OpenRouter error: 404 Client Error: Not Found for url: https://openrouter.ai/api/v1/chat/completions]"
+    },
+    {
+      "timestamp": "2026-05-23T09:58:22.442735",
+      "folder": "C:\\Users\\aztre\\Desktop\\agent\\.claude\\worktrees",
+      "file_count": 0,
+      "subdirs": 1,
+      "sample_files": [],
+      "summary": "[OpenRouter error: 404 Client Error: Not Found for url: https://openrouter.ai/api/v1/chat/completions]"
+    }
+  ]
+}
