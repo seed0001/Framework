@@ -1,0 +1,23 @@
+# Background Memory Service — configuration
+# Override any value with the corresponding MEMORY_SERVICE_* env variable.
+
+# How often to compile a segment (seconds).  Default: 3600 (1 hour).
+interval_seconds: 3600
+
+# Where segment files and the SQLite index live.
+# Relative paths are resolved from the project root.
+storage_path: data/segments
+
+# The audit log written by src/audit_log.py.
+audit_log_path: logs/audit.log
+
+# How long to retain each segment tier before deletion.
+retention:
+  hourly_days:   7    # keep hourly segments for 7 days
+  daily_weeks:   4    # keep daily segments for 4 weeks
+  weekly_months: 6    # keep weekly segments for ~6 months
+
+# Compress segment JSON data files (gzip) to save disk space.
+compression:
+  enabled:    true
+  after_days: 1       # compress segments older than 1 day
