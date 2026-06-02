@@ -19,12 +19,25 @@ TRAINING_DATA_DIR = DATA_DIR / "training_data"
 SOUL_TRAINING_DIR = DATA_DIR / "soul_training"
 VOICES_DIR = DATA_DIR / "voices"
 
+# Obsidian vault integration
+# OBSIDIAN_VAULT_DIR — path to the actual Obsidian vault folder on disk.
+#   Defaults to <project>/vault. Override with OBSIDIAN_VAULT_DIR env var.
+# OBSIDIAN_URL       — Obsidian Local REST API base URL (optional plugin).
+# OBSIDIAN_API_KEY   — API key for the REST API plugin (leave blank if not used).
+OBSIDIAN_VAULT_DIR = Path(
+    os.getenv("OBSIDIAN_VAULT_DIR", str(PROJECT_ROOT / "vault"))
+).expanduser().resolve()
+OBSIDIAN_URL = os.getenv("OBSIDIAN_URL", "http://localhost:27123")
+OBSIDIAN_API_KEY = os.getenv("OBSIDIAN_API_KEY", "")
+# How many sessions to wait between emergence scans (0 = every tick)
+VAULT_EMERGENCE_INTERVAL = int(os.getenv("VAULT_EMERGENCE_INTERVAL", "10"))
+
 # Generated images (gitignored). Override with IMAGE_OUTPUT_DIR env (e.g. ~/Pictures/Adam).
 IMAGE_OUTPUT_DIR = Path(
     os.getenv("IMAGE_OUTPUT_DIR", str(PROJECT_ROOT / "generated_images"))
 ).expanduser().resolve()
 
-for d in (DATA_DIR, MEMORY_DIR, USER_PROFILES_DIR, LOGS_DIR, KNOWLEDGE_DIR, RESEARCH_OUTPUT_DIR, TRAINING_DATA_DIR, SOUL_TRAINING_DIR, VOICES_DIR):
+for d in (DATA_DIR, MEMORY_DIR, USER_PROFILES_DIR, LOGS_DIR, KNOWLEDGE_DIR, RESEARCH_OUTPUT_DIR, TRAINING_DATA_DIR, SOUL_TRAINING_DIR, VOICES_DIR, OBSIDIAN_VAULT_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 # LLM provider (xAI is default for backward compatibility)
@@ -181,3 +194,48 @@ DISCORD_OWNER_ID = os.getenv("DISCORD_OWNER_ID", "")  # Primary owner Discord ID
 # Soul training base model (Hugging Face)
 SOUL_BASE_MODEL = os.getenv("SOUL_BASE_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 
+from contextvars import ContextVar
+active_user_id: ContextVar[str] = ContextVar("active_user_id", default="default")
+in_workshop_mode: ContextVar[bool] = ContextVar("in_workshop_mode", default=False)
+
+DEFAULT_TILES = {
+    "apps": [
+        {
+            "id": "chat_assistant",
+            "title": "AI CHAT ASSISTANT",
+            "description": "Launch communications stream to interface with the core lifeform agent.",
+            "type": "webpage",
+            "url": "/chat",
+            "badge": "AGENT_PORTAL",
+            "color": "purple"
+        },
+        {
+            "id": "dev_workshop",
+            "title": "DEVELOPMENT WORKSHOP",
+            "description": "Access developer integration sandboxes and testing environment models.",
+            "type": "webpage",
+            "url": "/#/workshop",
+            "badge": "STAGING",
+            "color": "orange"
+        },
+        {
+            "id": "system_settings",
+            "title": "SYSTEM SETTINGS",
+            "description": "Manage narration voices, active Discord bot tokens, and user access credentials.",
+            "type": "webpage",
+            "url": "/#/settings",
+            "badge": "REGISTRY",
+            "color": "cyan"
+        },
+        {
+            "id": "how_i_work",
+            "title": "HOW I WORK",
+            "description": "Complete documentation of the framework — architecture, memory, drives, tools, and data flow.",
+            "type": "webpage",
+            "url": "/#/howiwork",
+            "badge": "DOCS",
+            "color": "green"
+        }
+    ],
+    "games": []
+}

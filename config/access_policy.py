@@ -58,7 +58,6 @@ DEFAULT_POLICY = {
         "get_system_info",
         "list_processes",
         "is_process_running",
-        "run_command",
         "run_build",
         "spawn_subagent",
         "subagent_status",

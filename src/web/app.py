@@ -6,11 +6,11 @@ import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi import FastAPI, UploadFile, File, Form, Request, Response
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from config.settings import WEB_HOST, WEB_PORT
+from config.settings import WEB_HOST, WEB_PORT, DATA_DIR, USER_PROFILES_DIR, DEFAULT_TILES
 from src.agent import core as agent_core
 from src.agent.core import AssistiveAgent
 from src.tools import tool_queue
@@ -19,12 +19,42 @@ from src.voice.tts import synthesize
 
 # Global agent instance
 agent: AssistiveAgent | None = None
-_discord_task: asyncio.Task | None = None
+_discord_task = None
+_user_discord_tasks: dict[str, asyncio.Task] = {}
 _background_thoughts_task: asyncio.Task | None = None
 _status_check_task: asyncio.Task | None = None
 _consolidator_task: asyncio.Task | None = None
 _consolidator_stop: asyncio.Event | None = None
 _memory_service_task: asyncio.Task | None = None
+_vault_emergence_task: asyncio.Task | None = None
+
+def start_user_discord_bot(username: str):
+    global _user_discord_tasks
+    from src.user_settings import get_user_discord_config
+    token, owner_id = get_user_discord_config(username)
+    if not token or not owner_id:
+        return
+    
+    # Cancel existing bot if any
+    stop_user_discord_bot(username)
+    
+    u_agent = get_agent_for_user(username)
+    if not u_agent:
+        return
+        
+    try:
+        from src.discord_bot import start_discord_task_for_user
+        _user_discord_tasks[username] = start_discord_task_for_user(username, token, owner_id, u_agent)
+        print(f"Started Discord bot for user '{username}'")
+    except Exception as e:
+        print(f"Failed to start Discord bot for user '{username}': {e}")
+
+def stop_user_discord_bot(username: str):
+    global _user_discord_tasks
+    task = _user_discord_tasks.pop(username, None)
+    if task and not task.done():
+        task.cancel()
+        print(f"Stopped Discord bot for user '{username}'")
 async def _status_check_loop():
     """Periodic self-diagnostic: sub-agent status. Alert only when issues first appear, not every poll."""
     STATUS_INTERVAL = 600  # 10 min
@@ -168,6 +198,43 @@ async def _consolidator_loop(stop_event: asyncio.Event):
             print(f"Consolidator crashed: {e}")
 
 
+async def _vault_emergence_loop(stop_event: asyncio.Event) -> None:
+    """
+    Background loop that periodically runs the emergence scanner.
+    Runs independently of the consolidator — uses its own cooldown.
+    Silently does nothing if the vault isn't set up or is offline.
+    """
+    import random
+    from config.settings import VAULT_EMERGENCE_INTERVAL
+
+    # Initial delay: wait a few minutes for the agent to warm up first
+    await asyncio.sleep(120)
+
+    tick = 0
+    while not stop_event.is_set():
+        tick += 1
+        if VAULT_EMERGENCE_INTERVAL <= 0 or tick % max(1, VAULT_EMERGENCE_INTERVAL) == 0:
+            try:
+                from src.obsidian.emergence import run_scan
+                await run_scan(user_id="default")
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                try:
+                    from src.logging_config import log_error
+                    log_error("vault_emergence", exc)
+                except Exception:
+                    pass
+
+        # Sleep 20–30 min between ticks (jittered)
+        wait = random.randint(1200, 1800)
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=wait)
+            return
+        except asyncio.TimeoutError:
+            continue
+
+
 async def _run_completion_review(aid: str, task: str, status: str):
     """Auto-notify Creator when a background task completes."""
     global agent
@@ -299,6 +366,7 @@ def _on_subagent_complete(aid: str, task: str, status: str):
 async def lifespan(app: FastAPI):
     global agent, _discord_task, _background_thoughts_task, _status_check_task
     global _consolidator_task, _consolidator_stop, _memory_service_task
+    global _vault_emergence_task
     agent = AssistiveAgent(user_id="default")
     from src.tools import subagents
     subagents.set_completion_callback(_on_subagent_complete)
@@ -306,20 +374,32 @@ async def lifespan(app: FastAPI):
     _status_check_task = asyncio.create_task(_status_check_loop())
     _consolidator_stop = asyncio.Event()
     _consolidator_task = asyncio.create_task(_consolidator_loop(_consolidator_stop))
+    _vault_emergence_task = asyncio.create_task(_vault_emergence_loop(_consolidator_stop))
     try:
         from src.memory_service.service import MemoryService
         _memory_service_task = asyncio.create_task(MemoryService().run(integrated=True))
     except Exception as e:
         print(f"Memory service not started: {e}")
-    # Start Discord bot (and outreach consumer) if configured
+    # Start Discord bots for all configured profiles
     try:
-        from src.discord_bot import set_agent, start_discord_task
-
+        from src.discord_bot import set_agent
         set_agent(agent)
-        _discord_task = start_discord_task()
+        
+        # Start bot for default profile
+        start_user_discord_bot("default")
+        
+        # Scan profiles
+        if USER_PROFILES_DIR.exists():
+            for p in USER_PROFILES_DIR.iterdir():
+                if p.is_dir():
+                    start_user_discord_bot(p.name)
     except Exception as e:
-        print(f"Discord bot not started: {e}")
+        print(f"Error starting Discord bots on lifespan startup: {e}")
     yield
+    # Stop all user Discord tasks
+    global _user_discord_tasks
+    for username in list(_user_discord_tasks.keys()):
+        stop_user_discord_bot(username)
     if _background_thoughts_task and not _background_thoughts_task.done():
         _background_thoughts_task.cancel()
         try:
@@ -362,6 +442,35 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Software Lifeform", lifespan=lifespan)
 
+_agents: dict[str, AssistiveAgent] = {}
+
+def get_agent_for_user(username: str | None) -> AssistiveAgent | None:
+    global agent, _agents
+    if not agent:
+        return None
+    from src.agent.soul import get_owner_name
+    owner_name = get_owner_name()
+    key = "default"
+    if username:
+        if not owner_name or username.lower() != owner_name.lower():
+            key = username
+    
+    if key == "default":
+        return agent
+        
+    if key not in _agents:
+        try:
+            _agents[key] = AssistiveAgent(user_id=key)
+        except Exception as e:
+            print(f"Failed to instantiate agent for user {key}: {e}")
+            return None
+    return _agents[key]
+
+def get_agent_for_request(request: Request) -> AssistiveAgent | None:
+    username = get_current_user(request)
+    return get_agent_for_user(username)
+
+
 # Paths
 _WEB_DIR = Path(__file__).resolve().parent
 _STATIC = _WEB_DIR / "static"
@@ -373,9 +482,22 @@ if _STATIC.exists():
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
+    from fastapi import Response
+    import time
     html_path = _TEMPLATES / "index.html"
     with open(html_path, encoding="utf-8") as f:
-        return f.read()
+        content = f.read()
+    ts = int(time.time())
+    content = content.replace("main.js", f"main.js?t={ts}").replace("main.css", f"main.css?t={ts}")
+    return Response(
+        content=content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 
 @app.get("/chat", response_class=HTMLResponse)
@@ -385,25 +507,34 @@ async def chat():
         return f.read()
 
 
-async def _stream_chat_generator(message: str, device: str = "desktop_chat"):
+@app.get("/workshop")
+async def workshop_redirect():
+    return RedirectResponse(url="/#/workshop")
+
+
+async def _stream_chat_generator(message: str, username: str | None, device: str = "desktop_chat"):
     """Stream narration events then final response as SSE."""
     queue: asyncio.Queue = asyncio.Queue()
 
     async def run_agent():
         try:
-            agent.memory.set_working("current_speaker_discord_id", None)
+            u_agent = get_agent_for_user(username)
+            if not u_agent:
+                await queue.put({"type": "error", "text": "Agent not ready"})
+                return
+            u_agent.memory.set_working("current_speaker_discord_id", None)
             
             # Setup device and location context tags in memory
-            agent.memory.current_turn_metadata = {
+            u_agent.memory.current_turn_metadata = {
                 "source_device": device,
                 "source_channel": "web_chat",
-                "session_id": agent.memory.session_id
+                "session_id": u_agent.memory.session_id
             }
             
             from src.agent.soul import get_context_for_speaker
-            ctx = get_context_for_speaker(is_web=True)
+            ctx = get_context_for_speaker(is_web=True, username=username)
             tagged_message = f"[device={device}] {message}"
-            result = await agent.chat(
+            result = await u_agent.chat(
                 ctx + tagged_message,
                 narrate_queue=queue,
                 speaker_discord_id=None,
@@ -412,8 +543,9 @@ async def _stream_chat_generator(message: str, device: str = "desktop_chat"):
         except Exception as e:
             await queue.put({"type": "error", "text": str(e)})
         finally:
-            if agent:
-                agent.memory.current_turn_metadata = {}
+            u_agent = get_agent_for_user(username)
+            if u_agent:
+                u_agent.memory.current_turn_metadata = {}
             await queue.put(None)
 
     asyncio.create_task(run_agent())
@@ -439,8 +571,9 @@ async def api_chat(
         ua = request.headers.get("user-agent", "").lower()
         device = "phone" if any(mob in ua for mob in ("iphone", "android", "mobile", "phone")) else "desktop"
     
+    username = get_current_user(request)
     return StreamingResponse(
-        _stream_chat_generator(message, device),
+        _stream_chat_generator(message, username, device),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -468,19 +601,20 @@ async def api_tool_queue():
 
 
 @app.get("/api/memory-view")
-async def api_memory_view():
+async def api_memory_view(request: Request):
     """Return profile, episodic memories, working memory, and biology state."""
-    if not agent:
+    u_agent = get_agent_for_request(request)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
     from src.tools import image_gen
-    m = agent.memory
+    m = u_agent.memory
     return {
         "profile": m.get_profile_view(),
         "episodic": m.get_episodic_view(),
         "working": m.get_working_view(),
         "thoughts": m.get_thoughts_view(),
-        "biology": agent.biology.get_view(),
-        "existential": agent.existential.get_view(),
+        "biology": u_agent.biology.get_view(),
+        "existential": u_agent.existential.get_view(),
         "values_vault": __import__("src.values_vault", fromlist=["get_view"]).get_view(),
         "presence": __import__("src.presence", fromlist=["get_view"]).get_view(),
         "image_usage": image_gen.get_usage_data(),
@@ -490,77 +624,84 @@ async def api_memory_view():
 
 @app.post("/api/memory/remember")
 async def api_memory_remember(
+    request: Request,
     category: str = Form(""),
     fact: str = Form(""),
     key: str = Form(""),
 ):
     """Manually store a profile fact (always protected)."""
-    if not agent:
+    u_agent = get_agent_for_request(request)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
     fact = (fact or "").strip()
     if not fact:
         return JSONResponse({"error": "fact is required"}, status_code=400)
     try:
         if key:
-            agent.memory.profile.set(
+            u_agent.memory.profile.set(
                 key.strip(), fact,
                 category=(category or "general").strip(),
                 source="user", protected=True,
             )
             msg = f"remembered (key='{key.strip()}', protected)."
         else:
-            msg = agent.memory.add_profile_fact(category or "other", fact)
+            msg = u_agent.memory.add_profile_fact(category or "other", fact)
         return {"ok": True, "message": msg}
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
 
 @app.post("/api/memory/forget")
-async def api_memory_forget(key: str = Form(...)):
+async def api_memory_forget(request: Request, key: str = Form(...)):
     """Soft-delete a profile fact by exact key."""
-    if not agent:
+    u_agent = get_agent_for_request(request)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
-    ok = agent.memory.profile.delete(key.strip())
+    ok = u_agent.memory.profile.delete(key.strip())
     return {"ok": ok}
 
 
 @app.post("/api/memory/protect")
-async def api_memory_protect(key: str = Form(...), protected: int = Form(1)):
+async def api_memory_protect(request: Request, key: str = Form(...), protected: int = Form(1)):
     """Toggle the protected flag on a profile fact by exact key."""
-    if not agent:
+    u_agent = get_agent_for_request(request)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
-    ok = agent.memory.profile.protect(key.strip(), protected=bool(int(protected)))
+    ok = u_agent.memory.profile.protect(key.strip(), protected=bool(int(protected)))
     return {"ok": ok}
 
 
 @app.post("/api/memory/decay-config")
 async def api_memory_decay_config(
+    request: Request,
     half_life_days: float = Form(...),
     min_confidence: float = Form(...),
 ):
     """Persist decay tuning for the consolidator to pick up next tick."""
-    if not agent:
+    u_agent = get_agent_for_request(request)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
     if half_life_days <= 0 or not (0 <= min_confidence <= 1):
         return JSONResponse(
             {"error": "half_life_days > 0 and 0 <= min_confidence <= 1"}, status_code=400
         )
-    agent.memory.state.set("memory.config.half_life_days", half_life_days)
-    agent.memory.state.set("memory.config.min_confidence", min_confidence)
+    u_agent.memory.state.set("memory.config.half_life_days", half_life_days)
+    u_agent.memory.state.set("memory.config.min_confidence", min_confidence)
     return {"ok": True}
 
 
 @app.post("/api/memory/forget-all")
-async def api_memory_forget_all(confirm: str = Form("")):
+async def api_memory_forget_all(request: Request, confirm: str = Form("")):
     """Wipe ALL profile facts. Requires confirm=yes-i-am-sure."""
-    if not agent:
+    u_agent = get_agent_for_request(request)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
     if confirm != "yes-i-am-sure":
         return JSONResponse({"error": "missing confirm token"}, status_code=400)
-    facts = agent.memory.profile.get_all()
+    facts = u_agent.memory.profile.get_all()
     n = 0
     for f in facts:
-        if agent.memory.profile.delete(f.key):
+        if u_agent.memory.profile.delete(f.key):
             n += 1
     return {"ok": True, "deleted": n}
 
@@ -576,9 +717,10 @@ async def api_tool_reject(tool_id: str = Form(...)):
 
 
 @app.post("/api/tool-reload")
-async def api_tool_reload():
-    if agent:
-        agent._reload_dynamic()
+async def api_tool_reload(request: Request):
+    u_agent = get_agent_for_request(request)
+    if u_agent:
+        u_agent._reload_dynamic()
     return {"result": "Tools reloaded"}
 
 
@@ -695,18 +837,56 @@ async def api_voices():
 
 
 @app.get("/api/settings")
-async def api_get_settings():
-    """Get user settings (tts_voice, etc.)."""
+async def api_get_settings(request: Request):
+    """Get user settings (tts_voice, discord configuration, etc.)."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
     from src.user_settings import get_settings
-    return get_settings("default")
+    settings = get_settings(username)
+    token = settings.get("discord_token")
+    return {
+        "tts_voice": settings.get("tts_voice", ""),
+        "discord_token_set": bool(token),
+        "discord_owner_id": settings.get("discord_owner_id", ""),
+        "discord_status": "Running" if username in _user_discord_tasks else "Stopped"
+    }
 
 
 @app.post("/api/settings")
-async def api_set_settings(tts_voice: str = Form(None)):
-    """Update user settings. tts_voice: Edge TTS ShortName (e.g. en-GB-RyanNeural)."""
+async def api_set_settings(
+    request: Request,
+    tts_voice: str = Form(None),
+    discord_token: str = Form(None),
+    discord_owner_id: str = Form(None),
+):
+    """Update user settings and hot-reload Discord bot client if changed."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
     from src.user_settings import set_setting
-    if tts_voice:
-        set_setting("tts_voice", tts_voice)
+    if isinstance(tts_voice, str):
+        set_setting("tts_voice", tts_voice, username)
+        
+    config_changed = False
+    if isinstance(discord_owner_id, str):
+        set_setting("discord_owner_id", discord_owner_id.strip(), username)
+        config_changed = True
+        
+    if isinstance(discord_token, str):
+        token_str = discord_token.strip()
+        if token_str == "__REMOVE__":
+            set_setting("discord_token", None, username)
+            set_setting("discord_owner_id", None, username)
+            stop_user_discord_bot(username)
+            config_changed = False
+        elif token_str:
+            set_setting("discord_token", token_str, username)
+            config_changed = True
+            
+    if config_changed:
+        start_user_discord_bot(username)
+        
     return {"ok": True}
 
 
@@ -893,11 +1073,12 @@ async def api_reflex_pattern_reset(pattern_key: str = Form(...)):
 
 
 @app.post("/api/speak")
-async def api_speak(text: str = Form(...), voice: str = Form(None)):
+async def api_speak(request: Request, text: str = Form(...), voice: str = Form(None)):
     """Convert text to speech, return base64 mp3."""
     try:
         from src.user_settings import get_tts_voice
-        voice_id = voice or get_tts_voice("default")
+        username = get_current_user(request) or "default"
+        voice_id = voice or get_tts_voice(username)
         audio_bytes = await synthesize(text, voice=voice_id)
         b64 = base64.b64encode(audio_bytes).decode("utf-8")
         return {"audio": f"data:audio/mp3;base64,{b64}"}
@@ -905,15 +1086,227 @@ async def api_speak(text: str = Form(...), voice: str = Form(None)):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+def get_current_user(request: Request) -> str | None:
+    return request.cookies.get("session_user")
+
+
+@app.get("/api/me")
+async def api_me(request: Request):
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    users_path = DATA_DIR / "users.json"
+    permissions = ["tiles:view"]
+    if users_path.exists():
+        try:
+            with open(users_path, encoding="utf-8") as f:
+                users = json.load(f)
+                for u in users:
+                    if u.get("username") == username:
+                        permissions = u.get("permissions", [])
+                        break
+        except Exception:
+            pass
+            
+    return {"username": username, "permissions": permissions}
+
+
+@app.post("/api/login")
+async def api_login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    import hashlib
+    username = username.strip()
+    users_path = DATA_DIR / "users.json"
+    if not users_path.exists():
+        return JSONResponse({"error": "No users registered"}, status_code=400)
+        
+    try:
+        with open(users_path, encoding="utf-8") as f:
+            users = json.load(f)
+    except Exception:
+        return JSONResponse({"error": "Failed to read users database"}, status_code=500)
+        
+    p_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    found = None
+    for u in users:
+        if u.get("username") == username and u.get("password_hash") == p_hash:
+            found = u
+            break
+            
+    if not found:
+        return JSONResponse({"error": "Invalid username or password"}, status_code=401)
+        
+    response = JSONResponse({
+        "ok": True, 
+        "username": username, 
+        "permissions": found.get("permissions", [])
+    })
+    response.set_cookie(
+        key="session_user",
+        value=username,
+        httponly=True,
+        max_age=3600 * 24 * 7,  # 7 days
+        samesite="lax",
+        secure=False,
+    )
+    return response
+
+
+@app.post("/api/register")
+async def api_register(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    import hashlib
+    username = username.strip()
+    if not username:
+        return JSONResponse({"error": "Username is required"}, status_code=400)
+    if not password:
+        return JSONResponse({"error": "Password is required"}, status_code=400)
+        
+    users_path = DATA_DIR / "users.json"
+    users = []
+    if users_path.exists():
+        try:
+            with open(users_path, encoding="utf-8") as f:
+                users = json.load(f)
+        except Exception:
+            return JSONResponse({"error": "Failed to read users database"}, status_code=500)
+            
+    # Check if already exists
+    for u in users:
+        if u.get("username") == username:
+            return JSONResponse({"error": "Username already exists"}, status_code=400)
+            
+    p_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    new_user = {
+        "username": username,
+        "password_hash": p_hash,
+        "permissions": ["tiles:view"]  # Default permissions
+    }
+    users.append(new_user)
+    
+    try:
+        with open(users_path, "w", encoding="utf-8") as f:
+            json.dump(users, f, indent=2, ensure_ascii=False)
+    except Exception:
+        return JSONResponse({"error": "Failed to write user data"}, status_code=500)
+        
+    # Log this action to Andrew's unified memory database
+    if agent:
+        try:
+            agent.memory.add_short_term(
+                f"[System notification]: New user account '{username}' registered.",
+                source_device="web_hub",
+                source_channel="hub_activity",
+                activity_type="user_registration",
+                session_id=agent.memory.session_id
+            )
+        except Exception:
+            pass
+            
+    # Auto log them in
+    response = JSONResponse({
+        "ok": True, 
+        "username": username, 
+        "permissions": new_user["permissions"]
+    })
+    response.set_cookie(
+        key="session_user",
+        value=username,
+        httponly=True,
+        max_age=3600 * 24 * 7,  # 7 days
+        samesite="lax",
+        secure=False,
+    )
+    return response
+
+
+@app.post("/api/logout")
+async def api_logout():
+    response = JSONResponse({"ok": True})
+    response.delete_cookie("session_user")
+    return response
+
+
 @app.get("/api/tiles")
-async def api_tiles():
-    """Retrieve webpage, app, and game tile configurations."""
-    from pathlib import Path
-    tiles_path = Path("data/tiles.json")
-    if not tiles_path.exists():
-        return {"webpages": [], "apps": [], "games": []}
-    with open(tiles_path, encoding="utf-8") as f:
-        return json.load(f)
+async def api_tiles(request: Request):
+    """Retrieve webpage, app, and game tile configurations for the logged-in user."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    # Ensure global default tiles file exists
+    global_tiles_path = DATA_DIR / "tiles.json"
+    if not global_tiles_path.exists():
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            with open(global_tiles_path, "w", encoding="utf-8") as f:
+                json.dump(DEFAULT_TILES, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+    user_tiles_path = USER_PROFILES_DIR / username / "tiles.json"
+    
+    # Initialize from default tiles.json if not present
+    if not user_tiles_path.exists():
+        user_tiles_path.parent.mkdir(parents=True, exist_ok=True)
+        if global_tiles_path.exists():
+            import shutil
+            try:
+                shutil.copy(global_tiles_path, user_tiles_path)
+            except Exception:
+                pass
+                
+    if not user_tiles_path.exists():
+        try:
+            with open(user_tiles_path, "w", encoding="utf-8") as f:
+                json.dump(DEFAULT_TILES, f, indent=2, ensure_ascii=False)
+        except Exception:
+            return DEFAULT_TILES
+        
+    try:
+        with open(user_tiles_path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/tiles")
+async def api_save_tiles(request: Request):
+    """Save updated webpage, app, and game tile configurations for the logged-in user."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    try:
+        body = await request.json()
+        user_tiles_path = USER_PROFILES_DIR / username / "tiles.json"
+        user_tiles_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(user_tiles_path, "w", encoding="utf-8") as f:
+            json.dump(body, f, indent=2, ensure_ascii=False)
+            
+        # Log this edit action to Andrew's unified memory database
+        u_agent = get_agent_for_request(request)
+        if u_agent:
+            try:
+                u_agent.memory.add_short_term(
+                    f"[System notification]: Tiles configuration for user '{username}' was updated on the hub page.",
+                    source_device="web_hub",
+                    source_channel="hub_activity",
+                    activity_type="tiles_update",
+                    session_id=u_agent.memory.session_id
+                )
+            except Exception:
+                pass
+        return {"ok": True, "message": "Tiles saved successfully"}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/api/ingest")
@@ -949,101 +1342,99 @@ async def api_launch(
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/workshop/workspaces")
-async def api_workshop_workspaces():
-    """List parent sibling folders and main subfolders as selectable workspace choices."""
-    from pathlib import Path
+async def api_workshop_workspaces(request: Request):
+    """List the user's sandbox directory and any subdirectories as selectable workspaces."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    sandbox_dir = (USER_PROFILES_DIR / username / "sandbox").resolve()
+    sandbox_dir.mkdir(parents=True, exist_ok=True)
+    
+    candidates = [str(sandbox_dir).replace("\\", "/")]
     try:
-        current_dir = Path(".").resolve()
-        parent_dir = current_dir.parent
-        
-        candidates = []
-        # 1. Current root
-        candidates.append(str(current_dir).replace("\\", "/"))
-        
-        # 2. Sibling directories on Desktop
-        if parent_dir.exists() and parent_dir.is_dir():
-            for p in parent_dir.iterdir():
-                if p.is_dir() and not p.name.startswith('.'):
-                    candidates.append(str(p.resolve()).replace("\\", "/"))
-                    
-        # 3. Key subdirectories in the current root
-        subdirs_to_check = ["Andrew", "andrew's projects", "src", "tests", "data"]
-        for subdir in subdirs_to_check:
-            p = current_dir / subdir
-            if p.exists() and p.is_dir():
+        for p in sandbox_dir.rglob("*"):
+            if p.is_dir() and not any(part.startswith('.') for part in p.parts):
                 candidates.append(str(p.resolve()).replace("\\", "/"))
-                
-                # Check nested folders (e.g., andrew's projects/journal)
-                for subp in p.iterdir():
-                    if subp.is_dir() and not subp.name.startswith('.'):
-                        candidates.append(str(subp.resolve()).replace("\\", "/"))
+    except Exception:
+        pass
+        
+    return {"workspaces": candidates}
 
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_candidates = []
-        for c in candidates:
-            if c not in seen:
-                seen.add(c)
-                unique_candidates.append(c)
-                
-        return {"workspaces": unique_candidates}
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/workshop/files")
-async def api_workshop_files(workspace: str = "."):
-    """List all workspace files recursively for the file explorer."""
-    from pathlib import Path
-    try:
+async def api_workshop_files(request: Request, workspace: str = None):
+    """List all workspace files recursively inside the user's sandbox folder."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    sandbox_dir = (USER_PROFILES_DIR / username / "sandbox").resolve()
+    sandbox_dir.mkdir(parents=True, exist_ok=True)
+    
+    if not workspace:
+        root = sandbox_dir
+    else:
         root = Path(workspace).resolve()
-        if not root.exists() or not root.is_dir():
-            # Fallback to current directory if specified workspace is invalid
-            root = Path(".").resolve()
+        # Enforce sandbox boundary check
+        if not str(root).startswith(str(sandbox_dir)):
+            return JSONResponse({"error": "Access Denied: Path outside sandbox"}, status_code=403)
+            
+    if not root.exists() or not root.is_dir():
+        root = sandbox_dir
         
-        files = []
-        exclude_dirs = {".git", "node_modules", "__pycache__", ".gemini", "static", "templates", "src/web/frontend", "build", "dist"}
-        exclude_exts = {".pyc", ".png", ".jpg", ".zip", ".exe", ".lnk", ".mp3", ".mp4", ".pdf", ".gz", ".db", ".sqlite"}
-        
-        def scan(directory):
-            for path in directory.iterdir():
-                try:
-                    if path.is_dir() and path.name not in exclude_dirs:
-                        scan(path)
-                    elif path.is_file() and path.suffix not in exclude_exts:
-                        files.append(str(path.resolve()).replace("\\", "/"))
-                except Exception:
-                    continue
-                    
-        scan(root)
-        return {
-            "workspace": str(root).replace("\\", "/"),
-            "files": sorted(files)
-        }
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+    files = []
+    exclude_dirs = {".git", "node_modules", "__pycache__", ".gemini", "static", "templates", "src/web/frontend", "build", "dist"}
+    exclude_exts = {".pyc", ".png", ".jpg", ".zip", ".exe", ".lnk", ".mp3", ".mp4", ".pdf", ".gz", ".db", ".sqlite"}
+    
+    def scan(directory):
+        for path in directory.iterdir():
+            try:
+                if path.is_dir() and path.name not in exclude_dirs:
+                    scan(path)
+                elif path.is_file() and path.suffix not in exclude_exts:
+                    files.append(str(path.resolve()).replace("\\", "/"))
+            except Exception:
+                continue
+                
+    scan(root)
+    return {
+        "workspace": str(root).replace("\\", "/"),
+        "files": sorted(files)
+    }
 
 
 @app.get("/api/workshop/read")
-async def api_workshop_read(path: str):
-    """Read a specific file's content."""
-    from pathlib import Path
+async def api_workshop_read(request: Request, path: str):
+    """Read a specific file's content, restricted to the user's sandbox directory."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    sandbox_dir = (USER_PROFILES_DIR / username / "sandbox").resolve()
+    p = Path(path).resolve()
+    
+    # Enforce boundary check
+    if not str(p).startswith(str(sandbox_dir)):
+        return JSONResponse({"error": "Access Denied: Path outside sandbox"}, status_code=403)
+        
     try:
-        p = Path(path)
         if not p.exists() or p.is_dir():
             return JSONResponse({"error": "File not found"}, status_code=404)
         with open(p, "r", encoding="utf-8") as f:
             content = f.read()
             
         # Log this file-open action to Andrew's unified memory database
-        if agent:
+        u_agent = get_agent_for_request(request)
+        if u_agent:
             try:
-                agent.memory.add_short_term(
+                u_agent.memory.add_short_term(
                     f"[System notification]: Travis opened/reviewed the file '{path}' in the workshop.",
                     source_device="workshop",
                     source_channel="workshop_activity",
                     activity_type="file_read",
                     file_path=path,
-                    session_id=agent.memory.session_id
+                    session_id=u_agent.memory.session_id
                 )
             except Exception:
                 pass
@@ -1054,25 +1445,35 @@ async def api_workshop_read(path: str):
 
 
 @app.post("/api/workshop/write")
-async def api_workshop_write(path: str = Form(...), content: str = Form(...)):
-    """Overwrite/save a specific file's content."""
-    from pathlib import Path
+async def api_workshop_write(request: Request, path: str = Form(...), content: str = Form(...)):
+    """Overwrite/save a specific file's content, restricted to the user's sandbox directory."""
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    sandbox_dir = (USER_PROFILES_DIR / username / "sandbox").resolve()
+    p = Path(path).resolve()
+    
+    # Enforce boundary check
+    if not str(p).startswith(str(sandbox_dir)):
+        return JSONResponse({"error": "Access Denied: Path outside sandbox"}, status_code=403)
+        
     try:
-        p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         with open(p, "w", encoding="utf-8") as f:
             f.write(content)
             
         # Log this file-edit action to Andrew's unified memory database
-        if agent:
+        u_agent = get_agent_for_request(request)
+        if u_agent:
             try:
-                agent.memory.add_short_term(
+                u_agent.memory.add_short_term(
                     f"[System notification]: Travis edited and saved the file '{path}' in the workshop.",
                     source_device="workshop",
                     source_channel="workshop_activity",
                     activity_type="file_write",
                     file_path=path,
-                    session_id=agent.memory.session_id
+                    session_id=u_agent.memory.session_id
                 )
             except Exception:
                 pass
@@ -1082,7 +1483,58 @@ async def api_workshop_write(path: str = Form(...), content: str = Form(...)):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-async def _stream_workshop_generator(prompt: str, file_content: str, filename: str):
+@app.post("/api/workshop/package")
+async def api_workshop_package(request: Request):
+    """Zips the user's sandbox directory and returns it as a downloadable ZIP file with run script launcher helpers."""
+    import zipfile
+    import io
+    from fastapi.responses import StreamingResponse
+    
+    username = get_current_user(request)
+    if not username:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    sandbox_dir = (USER_PROFILES_DIR / username / "sandbox").resolve()
+    if not sandbox_dir.exists() or not sandbox_dir.is_dir():
+        return JSONResponse({"error": "No files found to package"}, status_code=404)
+        
+    zip_buffer = io.BytesIO()
+    
+    try:
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            has_files = False
+            for file_path in sandbox_dir.rglob("*"):
+                if file_path.is_file():
+                    has_files = True
+                    relative_path = file_path.relative_to(sandbox_dir)
+                    zip_file.write(file_path, arcname=relative_path)
+            
+            if not has_files:
+                return JSONResponse({"error": "No files found to package"}, status_code=404)
+                
+            # Add helper runner scripts if not present
+            if not (sandbox_dir / "run.bat").exists():
+                bat_content = "@echo off\necho Starting local web server for your project...\nstart http://localhost:8000\npython -m http.server 8000\n"
+                zip_file.writestr("run.bat", bat_content)
+            if not (sandbox_dir / "run.sh").exists():
+                sh_content = "#!/bin/bash\necho \"Starting local web server for your project...\"\npython3 -m http.server 8000 &\nsleep 1\nopen http://localhost:8000 || xdg-open http://localhost:8000\n"
+                zip_file.writestr("run.sh", sh_content)
+                    
+        zip_buffer.seek(0)
+        
+        headers = {
+            "Content-Disposition": f'attachment; filename="{username}_project.zip"'
+        }
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/x-zip-compressed",
+            headers=headers
+        )
+    except Exception as e:
+        return JSONResponse({"error": f"Failed to package app: {str(e)}"}, status_code=500)
+
+
+async def _stream_workshop_generator(prompt: str, file_content: str, filename: str, username: str | None):
     """Stream narration events, tool runs, file writes, and final responses as SSE."""
     queue: asyncio.Queue = asyncio.Queue()
 
@@ -1102,16 +1554,22 @@ async def _stream_workshop_generator(prompt: str, file_content: str, filename: s
 
     async def run_agent():
         try:
-            agent.memory.set_working("current_speaker_discord_id", None)
+            from config.settings import in_workshop_mode
+            in_workshop_mode.set(True)
+            u_agent = get_agent_for_user(username)
+            if not u_agent:
+                await queue.put({"type": "error", "text": "Agent not ready"})
+                return
+            u_agent.memory.set_working("current_speaker_discord_id", None)
             
             # Setup device and location context tags in memory
-            agent.memory.current_turn_metadata = {
+            u_agent.memory.current_turn_metadata = {
                 "source_device": "workshop",
                 "source_channel": "workshop_chat",
-                "session_id": agent.memory.session_id
+                "session_id": u_agent.memory.session_id
             }
             
-            result = await agent.chat(
+            result = await u_agent.chat(
                 user_input=message_with_context,
                 narrate_queue=queue,
                 speaker_discord_id=None,
@@ -1121,7 +1579,7 @@ async def _stream_workshop_generator(prompt: str, file_content: str, filename: s
             audio_base64 = None
             try:
                 from src.user_settings import get_tts_voice
-                voice_id = get_tts_voice("default")
+                voice_id = get_tts_voice(username or "default")
                 audio_bytes = await synthesize(result, voice=voice_id)
                 if audio_bytes:
                     audio_base64 = f"data:audio/mp3;base64,{base64.b64encode(audio_bytes).decode('utf-8')}"
@@ -1132,8 +1590,9 @@ async def _stream_workshop_generator(prompt: str, file_content: str, filename: s
         except Exception as e:
             await queue.put({"type": "error", "text": str(e)})
         finally:
-            if agent:
-                agent.memory.current_turn_metadata = {}
+            u_agent = get_agent_for_user(username)
+            if u_agent:
+                u_agent.memory.current_turn_metadata = {}
             await queue.put(None)
 
     asyncio.create_task(run_agent())
@@ -1147,16 +1606,30 @@ async def _stream_workshop_generator(prompt: str, file_content: str, filename: s
 
 @app.post("/api/workshop/ai")
 async def api_workshop_ai(
+    request: Request,
     prompt: str = Form(...),
     file_content: str = Form(""),
     filename: str = Form("")
 ):
     """Call the agent's core chat pipeline and stream narration and updates back as SSE."""
-    if not agent:
+    username = get_current_user(request)
+    u_agent = get_agent_for_user(username)
+    if not u_agent:
         return JSONResponse({"error": "Agent not ready"}, status_code=503)
         
+    # Enforce boundary check on filename if it is provided
+    if filename and filename != "untitled":
+        sandbox_dir = (USER_PROFILES_DIR / username / "sandbox").resolve()
+        p = Path(filename)
+        if not p.is_absolute():
+            p = (sandbox_dir / p).resolve()
+        else:
+            p = p.resolve()
+        if not str(p).startswith(str(sandbox_dir)):
+            return JSONResponse({"error": "Access Denied: Path outside sandbox"}, status_code=403)
+        
     return StreamingResponse(
-        _stream_workshop_generator(prompt, file_content, filename),
+        _stream_workshop_generator(prompt, file_content, filename, username),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

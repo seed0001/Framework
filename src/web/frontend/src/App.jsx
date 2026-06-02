@@ -1,143 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import StarfieldBackground from './components/StarfieldBackground';
 import GridTile from './components/GridTile';
 import WorkshopTile from './components/WorkshopTile';
-import { Layout, ArrowLeft, Shield } from 'lucide-react';
+import SettingsTile from './components/SettingsTile';
+import HowIWorkTile from './components/HowIWorkTile';
+import { LogOut } from 'lucide-react';
 
-function TelemetryHeader({ timeString, cpuLoad, memLoad }) {
+function PageWrapper({ children }) {
   return (
-    <header className="relative z-10 w-full mb-6 border border-white/[0.06] bg-[#111520]/80 rounded-xl p-4 flex flex-col md:flex-row justify-between items-center shadow-md backdrop-blur-md">
-      <div className="flex items-center space-x-3 mb-4 md:mb-0">
-        <div className="p-2 bg-white/[0.04] border border-white/[0.08] rounded-lg">
-          <Layout className="w-4 h-4 text-cyan-400" />
-        </div>
-        <div>
-          <h1 className="font-semibold text-sm tracking-wide text-white leading-none">
-            WORKSPACE DIRECTORY <span className="text-cyan-500">//</span> HUB
-          </h1>
-          <p className="text-[9px] font-mono text-slate-400 uppercase mt-1 tracking-wider">
-            System Control Panel & Integration Directory
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto font-mono text-[9px] tracking-wider">
-        <div className="border border-white/[0.06] bg-black/15 px-2.5 py-1.5 rounded-lg flex items-center justify-between space-x-2">
-          <span className="text-slate-400">CPU:</span>
-          <span className="text-white font-bold">{cpuLoad}%</span>
-        </div>
-        <div className="border border-white/[0.06] bg-black/15 px-2.5 py-1.5 rounded-lg flex items-center justify-between space-x-2">
-          <span className="text-slate-400">MEM:</span>
-          <span className="text-white font-bold">{memLoad}%</span>
-        </div>
-        <div className="border border-white/[0.06] bg-black/15 px-2.5 py-1.5 rounded-lg flex items-center justify-between space-x-2">
-          <span className="text-slate-400">SECURITY:</span>
-          <div className="flex items-center text-emerald-400 font-bold space-x-1">
-            <Shield className="w-3 h-3" />
-            <span>ACTIVE</span>
-          </div>
-        </div>
-        <div className="border border-white/[0.06] bg-black/15 px-2.5 py-1.5 rounded-lg flex items-center justify-between space-x-2">
-          <span className="text-slate-400">TIME:</span>
-          <span className="text-cyan-400 font-bold">{timeString}</span>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function HubHome() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10 max-w-3xl mx-auto w-full">
-      {/* Chat Tile */}
-      <a
-        href="/chat"
-        className="glass-panel glass-panel-hover p-4 rounded-xl flex flex-col justify-between h-[130px] group cursor-pointer"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="text-[14px] font-semibold text-white group-hover:text-cyan-400 transition-colors">
-            AI CHAT ASSISTANT
-          </h2>
-          <span className="text-[9px] font-mono text-purple-400 bg-purple-950/20 border border-purple-500/25 px-2 py-0.5 rounded-full font-semibold">
-            AGENT_PORTAL
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-400 leading-normal">
-          Launch communications stream to interface with the core lifeform agent.
-        </p>
-      </a>
-
-      {/* Apps Tile */}
-      <Link
-        to="/apps"
-        className="glass-panel glass-panel-hover p-4 rounded-xl flex flex-col justify-between h-[130px] group cursor-pointer"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="text-[14px] font-semibold text-white group-hover:text-cyan-400 transition-colors">
-            SYSTEM UTILITIES
-          </h2>
-          <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/20 border border-cyan-500/25 px-2 py-0.5 rounded-full font-semibold">
-            LOCAL_TOOLS
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-400 leading-normal">
-          Execute local administration tools, task managers, and developer command shells.
-        </p>
-      </Link>
-
-      {/* Games Tile */}
-      <Link
-        to="/games"
-        className="glass-panel glass-panel-hover p-4 rounded-xl flex flex-col justify-between h-[130px] group cursor-pointer"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="text-[14px] font-semibold text-white group-hover:text-cyan-400 transition-colors">
-            CURATED GAMES
-          </h2>
-          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/20 border border-emerald-500/25 px-2 py-0.5 rounded-full font-semibold">
-            GAMES_DB
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-400 leading-normal">
-          Launch and manage editor programs and configurations on the local environment.
-        </p>
-      </Link>
-
-      {/* Workshop Tile */}
-      <Link
-        to="/workshop"
-        className="glass-panel glass-panel-hover p-4 rounded-xl flex flex-col justify-between h-[130px] group cursor-pointer"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="text-[14px] font-semibold text-white group-hover:text-cyan-400 transition-colors">
-            DEVELOPMENT WORKSHOP
-          </h2>
-          <span className="text-[9px] font-mono text-orange-400 bg-orange-950/20 border border-orange-500/25 px-2 py-0.5 rounded-full font-semibold">
-            STAGING
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-400 leading-normal">
-          Access developer integration sandboxes and testing environment models.
-        </p>
-      </Link>
-    </div>
-  );
-}
-
-function PageWrapper({ children, title }) {
-  return (
-    <div className="relative z-10 max-w-3xl mx-auto w-full flex flex-col space-y-4">
-      <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-        <Link
-          to="/"
-          className="flex items-center space-x-2 text-[11px] font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.05] px-2.5 py-1.5 rounded-lg"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>RETURN TO DIRECTORY</span>
-        </Link>
-        <span className="text-[10px] font-mono text-cyan-400/80 uppercase tracking-widest">{title}</span>
-      </div>
+    <div className="relative z-10 max-w-3xl mx-auto w-full flex flex-col">
       <div className="animate-fade-in">
         {children}
       </div>
@@ -145,35 +17,268 @@ function PageWrapper({ children, title }) {
   );
 }
 
+function Login({ onLoginSuccess }) {
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!username.trim() || !password) {
+      setError('Username and password are required');
+      return;
+    }
+    if (isRegisterMode && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    setError('');
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('username', username.trim());
+      formData.append('password', password);
+
+      const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onLoginSuccess(data);
+      } else {
+        setError(data.error || 'Authentication failed');
+      }
+    } catch (err) {
+      setError('Connection failure. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative z-10 max-w-sm w-full mx-auto animate-fade-in">
+      <form
+        onSubmit={handleSubmit}
+        className="glass-panel p-6 rounded-xl border border-white/[0.08] bg-[#0c0f1d]/90 backdrop-blur-md shadow-2xl flex flex-col space-y-4"
+      >
+        <div className="text-center pb-2 border-b border-white/[0.06] mb-2">
+          <h2 className="text-[14px] font-bold text-cyan-400 uppercase tracking-widest">
+            {isRegisterMode ? 'CREATE NEW ACCOUNT' : 'AUTHENTICATION REQUIRED'}
+          </h2>
+          <p className="text-[9px] font-mono text-slate-400 uppercase mt-1">
+            {isRegisterMode ? 'User Registration Gate' : 'Access Control Gate'}
+          </p>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="flex border border-white/[0.06] bg-black/20 rounded-lg p-0.5 w-full text-[10px] font-mono mb-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsRegisterMode(false);
+              setError('');
+            }}
+            className={`flex-1 py-1.5 rounded-md text-center transition-colors cursor-pointer ${
+              !isRegisterMode
+                ? 'bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 font-bold'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            SIGN IN
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsRegisterMode(true);
+              setError('');
+            }}
+            className={`flex-1 py-1.5 rounded-md text-center transition-colors cursor-pointer ${
+              isRegisterMode
+                ? 'bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 font-bold'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            REGISTER
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-2.5 border border-red-500/25 bg-red-950/20 rounded text-[10px] text-red-400 font-mono text-center">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col space-y-1.5">
+          <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">Username</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="bg-black/35 border border-white/[0.08] focus:border-cyan-500/50 rounded-lg px-3 py-2 text-[12px] text-white focus:outline-none placeholder:text-slate-600"
+            placeholder="Identity handle..."
+          />
+        </div>
+
+        <div className="flex flex-col space-y-1.5">
+          <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="bg-black/35 border border-white/[0.08] focus:border-cyan-500/50 rounded-lg px-3 py-2 text-[12px] text-white focus:outline-none placeholder:text-slate-600"
+            placeholder="••••••••"
+          />
+        </div>
+
+        {isRegisterMode && (
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">Confirm Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="bg-black/35 border border-white/[0.08] focus:border-cyan-500/50 rounded-lg px-3 py-2 text-[12px] text-white focus:outline-none placeholder:text-slate-600"
+              placeholder="••••••••"
+            />
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 text-black font-semibold text-[11px] rounded-lg tracking-wider transition-colors cursor-pointer mt-2"
+        >
+          {loading ? 'VALIDATING...' : isRegisterMode ? 'CREATE ACCOUNT' : 'ENTER SYSTEM'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function AppContent({
+  tiles,
+  currentUser,
+  addSystemLog,
+  handleUpdateTiles,
+  onLoginSuccess,
+  handleLogout
+}) {
+  if (!currentUser) {
+    return (
+      <div className="relative min-h-screen text-[#e8eaf0] flex flex-col p-4 bg-[#0a0c12] justify-center items-center">
+        <StarfieldBackground />
+        <Login onLoginSuccess={onLoginSuccess} />
+      </div>
+    );
+  }
+
+  const location = useLocation();
+  const isWorkshop = location.pathname === '/workshop';
+  const isHowIWork = location.pathname === '/howiwork';
+
+  return (
+    <div className="relative min-h-screen text-[#e8eaf0] flex flex-col p-4 md:p-6 bg-[#0a0c12] justify-center items-center">
+      <StarfieldBackground />
+
+      {/* Floating Logout Button */}
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 text-[9px] font-mono border border-white/[0.08] hover:border-red-500/40 hover:text-red-400 bg-white/[0.01] hover:bg-red-950/10 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer z-30 flex items-center space-x-1 opacity-20 hover:opacity-100"
+        title="Logout"
+      >
+        <LogOut className="w-3.5 h-3.5" />
+        <span>LOGOUT</span>
+      </button>
+
+      <div className={`w-full flex-1 flex flex-col justify-center py-6 transition-all duration-300 ${isWorkshop ? 'max-w-[1400px] px-2 md:px-4' : isHowIWork ? 'max-w-5xl px-2 md:px-4' : 'max-w-3xl px-4'}`}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div className="w-full">
+                <GridTile
+                  title="System Registry"
+                  type="app"
+                  items={tiles.apps || []}
+                  allTiles={tiles}
+                  onUpdateTiles={handleUpdateTiles}
+                  onActionMessage={addSystemLog}
+                />
+              </div>
+            }
+          />
+          <Route
+            path="/workshop"
+            element={
+              <div className="relative z-10 max-w-6xl mx-auto w-full flex flex-col space-y-4 px-4">
+                <div className="animate-fade-in">
+                  <WorkshopTile />
+                </div>
+              </div>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <div className="relative z-10 max-w-xl mx-auto w-full flex flex-col space-y-4 px-4">
+                <div className="animate-fade-in">
+                  <SettingsTile />
+                </div>
+              </div>
+            }
+          />
+          <Route
+            path="/howiwork"
+            element={
+              <div className="animate-fade-in w-full">
+                <HowIWorkTile />
+              </div>
+            }
+          />
+        </Routes>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(null);
   const [tiles, setTiles] = useState({ apps: [], games: [] });
-  const [timeString, setTimeString] = useState('');
   const [systemAlerts, setSystemAlerts] = useState([
     { id: 1, text: 'DIRECTORY CONTROLLER CORE LOADED', type: 'info' }
   ]);
 
-  const [cpuLoad, setCpuLoad] = useState(4.2);
-  const [memLoad, setMemLoad] = useState(32.4);
-
+  // Check auth session on mount
   useEffect(() => {
-    const updateTime = () => {
-      const d = new Date();
-      setTimeString(d.toLocaleTimeString());
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const user = await res.json();
+          setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (err) {
+        setCurrentUser(null);
+      }
     };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    checkAuth();
   }, []);
 
+  // Fetch user tiles once authenticated
   useEffect(() => {
-    const telemetryInterval = setInterval(() => {
-      setCpuLoad(prev => Math.max(1.0, Math.min(99.0, +(prev + (Math.random() - 0.5) * 1.5).toFixed(1))));
-      setMemLoad(prev => Math.max(10.0, Math.min(99.0, +(prev + (Math.random() - 0.5) * 0.5).toFixed(1))));
-    }, 3000);
-    return () => clearInterval(telemetryInterval);
-  }, []);
+    if (!currentUser) {
+      setTiles({ apps: [], games: [] });
+      return;
+    }
 
-  useEffect(() => {
     const fetchTiles = async () => {
       try {
         const res = await fetch('/api/tiles');
@@ -186,7 +291,37 @@ export default function App() {
       }
     };
     fetchTiles();
-  }, []);
+  }, [currentUser]);
+
+  const handleUpdateTiles = async (updatedTiles) => {
+    setTiles(updatedTiles);
+    try {
+      const res = await fetch('/api/tiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTiles),
+      });
+      if (res.ok) {
+        addSystemLog('SYSTEM', 'TILES CONFIGURATION PERSISTED');
+      } else {
+        addSystemLog('ERROR', 'FAILED TO SAVE TILES CONFIG');
+      }
+    } catch (err) {
+      addSystemLog('ERROR', `Save error: ${err.message}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      setCurrentUser(null);
+      addSystemLog('SYSTEM', 'USER LOGGED OUT');
+    } catch (err) {
+      addSystemLog('ERROR', 'LOGOUT FAILED');
+    }
+  };
 
   const addSystemLog = (sender, text) => {
     setSystemAlerts(prev => [
@@ -195,79 +330,21 @@ export default function App() {
     ]);
   };
 
+  const onLoginSuccess = (user) => {
+    setCurrentUser(user);
+    addSystemLog('AUTH', `USER '${user.username}' CONNECTED`);
+  };
+
   return (
     <Router>
-      <div className="relative min-h-screen text-[#e8eaf0] flex flex-col p-4 md:p-6 bg-[#0a0c12]">
-        <StarfieldBackground />
-
-        <TelemetryHeader timeString={timeString} cpuLoad={cpuLoad} memLoad={memLoad} />
-
-        <div className="flex-1 flex flex-col justify-start">
-          <Routes>
-            <Route path="/" element={<HubHome />} />
-            <Route
-              path="/apps"
-              element={
-                <PageWrapper title="Local Utilities">
-                  <GridTile
-                    title="Administrative Tools"
-                    type="app"
-                    items={tiles.apps}
-                    onActionMessage={addSystemLog}
-                  />
-                </PageWrapper>
-              }
-            />
-            <Route
-              path="/games"
-              element={
-                <PageWrapper title="Curated Games">
-                  <GridTile
-                    title="Games Directory"
-                    type="game"
-                    items={tiles.games}
-                    onActionMessage={addSystemLog}
-                  />
-                </PageWrapper>
-              }
-            />
-            <Route
-              path="/workshop"
-              element={
-                <div className="relative z-10 max-w-6xl mx-auto w-full flex flex-col space-y-4 px-4">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <Link
-                      to="/"
-                      className="flex items-center space-x-2 text-[11px] font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.05] px-2.5 py-1.5 rounded-lg"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>RETURN TO DIRECTORY</span>
-                    </Link>
-                    <span className="text-[10px] font-mono text-cyan-400/80 uppercase tracking-widest font-bold">DEVELOPMENT WORKSHOP</span>
-                  </div>
-                  <div className="animate-fade-in">
-                    <WorkshopTile />
-                  </div>
-                </div>
-              }
-            />
-          </Routes>
-        </div>
-
-        <footer className="relative z-10 w-full mt-8 border-t border-white/[0.05] pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="w-full md:w-[450px] border border-white/[0.06] bg-black/15 rounded-lg p-2.5 font-mono text-[9px] text-slate-400 h-[65px] overflow-y-auto">
-            {systemAlerts.map((alert) => (
-              <div key={alert.id} className="truncate">
-                &gt; {alert.text}
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col items-end text-[10px] font-mono text-slate-500 tracking-wider">
-            <span>SECURE SYSTEM MODULES: ACTIVE</span>
-            <span>HUB ACCESS CONTROL &copy; 2026</span>
-          </div>
-        </footer>
-      </div>
+      <AppContent
+        tiles={tiles}
+        currentUser={currentUser}
+        addSystemLog={addSystemLog}
+        handleUpdateTiles={handleUpdateTiles}
+        onLoginSuccess={onLoginSuccess}
+        handleLogout={handleLogout}
+      />
     </Router>
   );
 }

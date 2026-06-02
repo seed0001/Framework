@@ -435,6 +435,18 @@ class MemoryConsolidator:
                         protected=False,
                     )
                     stats.facts_inserted += 1
+                    # Mirror to vault (fire-and-forget; never blocks consolidation)
+                    try:
+                        import asyncio as _asyncio
+                        from src.obsidian.sync import on_fact_consolidated
+                        _asyncio.create_task(on_fact_consolidated(
+                            user_id=self.profile.user_id if hasattr(self.profile, "user_id") else "default",
+                            key=key,
+                            value=f["fact"],
+                            confidence=cfg.extracted_confidence,
+                        ))
+                    except Exception:
+                        pass
                 except ValueError:
                     continue
 

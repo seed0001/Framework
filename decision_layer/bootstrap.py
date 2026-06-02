@@ -62,12 +62,6 @@ _SCHEDULE_SEEDS: list[tuple[str, str]] = [
     ("what appointments do I have this week?", "get_schedule"),
 ]
 
-_CODE_SEEDS: list[tuple[str, str]] = [
-    ("run the test suite", "run_command"),
-    ("execute the build script", "run_command"),
-    ("run pytest and show me the results", "run_command"),
-    ("check if the server is running with ps aux", "run_command"),
-]
 
 _LIST_BACKENDS_SEEDS: list[tuple[str, str]] = [
     ("pull up your providers", "list_backends"),

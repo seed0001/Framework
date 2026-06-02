@@ -34,7 +34,7 @@ SAFE_TOOLS: frozenset[str] = frozenset([
 ])
 
 HIGH_RISK_TOOLS: frozenset[str] = frozenset([
-    "run_command", "spawn_subagent",
+    "spawn_subagent",
     "send_discord_message", "send_discord_attachment", "post_to_channel",
     "send_proactive_message", "generate_image", "stop_all_subagents",
 ])
@@ -91,10 +91,6 @@ def build_context_hint(tool: str, args: dict[str, Any]) -> str:
             return f"{tool}|ext={ext}|dir={dir_hint[-60:]}"
         return tool
 
-    if tool == "run_command":
-        cmd = str(args.get("cmd") or "").strip()
-        tokens = cmd.split()[:2]
-        return f"{tool}|{' '.join(tokens)[:50]}"
 
     if tool in ("send_discord_message", "send_discord_attachment",
                 "post_to_channel", "send_proactive_message"):

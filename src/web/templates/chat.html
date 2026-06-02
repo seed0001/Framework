@@ -325,6 +325,51 @@
       animation: pulseGlow 1.4s ease-in-out infinite;
     }
 
+    /* Live transcript preview */
+    .live-transcript {
+      display: none;
+      max-width: 48rem;
+      margin: 0 auto;
+      width: 100%;
+      background: rgba(240,96,112,0.04);
+      border: 1px solid rgba(240,96,112,0.18);
+      border-radius: 12px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      min-height: 2.4rem;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .live-transcript.active {
+      display: block;
+      border-color: rgba(240,96,112,0.4);
+    }
+    .live-transcript .lt-final { color: var(--text); }
+    .live-transcript .lt-interim { color: var(--text-muted); font-style: italic; }
+    .live-transcript .lt-label {
+      position: absolute;
+      top: -0.55rem;
+      left: 0.75rem;
+      font-size: 0.65rem;
+      font-family: monospace;
+      background: var(--bg);
+      padding: 0 0.3rem;
+      color: var(--danger);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .live-transcript .lt-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--danger);
+      vertical-align: text-bottom;
+      margin-left: 1px;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
     .btn-stop {
       background: var(--bg-elevated);
       color: var(--text-secondary);
@@ -1061,6 +1106,10 @@
           <input type="text" id="textInput" placeholder="Message..." autocomplete="off" />
           <button class="btn btn-send" id="btnTypeSend">Send</button>
         </div>
+        <div class="live-transcript" id="liveTranscript">
+          <span class="lt-label">Live</span>
+          <span class="lt-final" id="ltFinal"></span><span class="lt-interim" id="ltInterim"></span><span class="lt-cursor" id="ltCursor" style="display:none"></span>
+        </div>
         <div class="voice-row">
           <button class="btn btn-record" id="btnRecord">Record</button>
           <button class="btn btn-stop" id="btnStop" disabled>Stop</button>
@@ -1119,6 +1168,79 @@
     let speakResponses = true;
     let listening = true;
 
+    // Live transcription state
+    let speechRec = null;
+    let ltFinalText = '';      // committed final segments from SpeechRecognition
+    let ltHasSupport = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+    const liveTranscript = document.getElementById('liveTranscript');
+    const ltFinalEl      = document.getElementById('ltFinal');
+    const ltInterimEl    = document.getElementById('ltInterim');
+    const ltCursorEl     = document.getElementById('ltCursor');
+
+    function ltShow(show) {
+      liveTranscript.classList.toggle('active', show);
+      ltCursorEl.style.display = show ? 'inline-block' : 'none';
+    }
+    function ltUpdate(final, interim) {
+      ltFinalEl.textContent  = final;
+      ltInterimEl.textContent = interim ? ' ' + interim : '';
+    }
+    function ltClear() {
+      ltFinalText = '';
+      ltUpdate('', '');
+      ltShow(false);
+    }
+
+    function startSpeechRecognition() {
+      if (!ltHasSupport) return;
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      speechRec = new SR();
+      speechRec.continuous  = true;
+      speechRec.interimResults = true;
+      speechRec.lang = 'en-US';
+
+      ltFinalText = '';
+      ltUpdate('', '');
+      ltShow(true);
+
+      speechRec.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) {
+            ltFinalText += t + ' ';
+          } else {
+            interim += t;
+          }
+        }
+        ltUpdate(ltFinalText, interim);
+      };
+
+      speechRec.onerror = (e) => {
+        // 'no-speech' is harmless during pauses — ignore it
+        if (e.error !== 'no-speech') {
+          console.warn('SpeechRecognition error:', e.error);
+        }
+      };
+
+      // Chrome stops after ~60s of silence; restart automatically
+      speechRec.onend = () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          try { speechRec.start(); } catch (_) {}
+        }
+      };
+
+      try { speechRec.start(); } catch (_) {}
+    }
+
+    function stopSpeechRecognition() {
+      if (speechRec) {
+        try { speechRec.stop(); } catch (_) {}
+        speechRec = null;
+      }
+    }
+
     toggleTTS.addEventListener('click', () => {
       speakResponses = !speakResponses;
       toggleTTS.classList.toggle('on', speakResponses);
@@ -1157,6 +1279,9 @@
         mediaRecorder.ondataavailable = (e) => { if (e.data.size) audioChunks.push(e.data); };
         mediaRecorder.onstop = () => {
           stream.getTracks().forEach(t => t.stop());
+          stopSpeechRecognition();
+          // Keep transcript visible so user can see what was captured
+          ltCursorEl.style.display = 'none';
           setStatus('Stopped. Click Send.');
           btnRecord.disabled = false;
           btnStop.disabled = true;
@@ -1167,7 +1292,10 @@
         btnRecord.classList.add('recording');
         btnRecord.disabled = true;
         btnStop.disabled = false;
-        setStatus('Recording...');
+        setStatus(ltHasSupport ? 'Recording — live transcript active' : 'Recording...');
+
+        // Start live transcription alongside the audio capture
+        startSpeechRecognition();
       } catch (err) {
         setStatus('Mic denied');
       }
@@ -1183,6 +1311,8 @@
     btnSend.addEventListener('click', async () => {
       if (audioChunks.length === 0) { setStatus('No recording'); return; }
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      // Pre-fill with live transcript immediately so there's no blank gap
+      const liveText = ltFinalText.trim();
       setStatus('Transcribing...');
       setLoading(true);
       try {
@@ -1191,13 +1321,23 @@
         const r = await fetch('/api/transcribe', { method: 'POST', body: fd });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'Transcription failed');
-        const text = data.text || '';
-        if (!text.trim()) { setStatus('No speech'); setLoading(false); return; }
+        // Prefer Whisper result; fall back to live transcript if Whisper returns empty
+        const text = (data.text || '').trim() || liveText;
+        ltClear();
+        if (!text) { setStatus('No speech detected'); setLoading(false); return; }
         addToLog('user', text);
         setStatus('Sending...');
         await sendToAgent(text);
       } catch (err) {
-        setStatus('Error: ' + err.message);
+        // If the server call failed entirely, try using the live transcript
+        if (liveText) {
+          ltClear();
+          addToLog('user', liveText);
+          setStatus('Sending (used live transcript)...');
+          try { await sendToAgent(liveText); } catch (e2) { setStatus('Error: ' + e2.message); }
+        } else {
+          setStatus('Error: ' + err.message);
+        }
       } finally {
         setLoading(false);
         audioChunks = [];

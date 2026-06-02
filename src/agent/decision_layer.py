@@ -118,7 +118,6 @@ class IntentToolExtractor:
         "write_file": ["write", "save", "create", "update", "modify", "edit", "fix"],
         "verify_file_exists": ["verify", "check file", "confirm file", "exists"],
         "list_dir": ["list", "show files", "directory", "folder", "dir"],
-        "run_command": ["run", "execute", "launch", "start", "shell", "command"],
         "search_web": ["search", "look up", "find online", "web"],
         "search_huggingface": ["huggingface", "hugging face", "hf", "huggingface search", "hf models"],
         "search_github": ["github", "git search", "github search", "repositories", "repo search"],
@@ -273,8 +272,6 @@ class ActionPredictor:
                 score += 0.12
             if tool in {"read_file", "write_file", "verify_file_exists"} and targets.get("paths"):
                 score += 0.08
-            if tool == "run_command" and targets.get("command"):
-                score += 0.08
             candidates.append(
                 {
                     "action": f"use_{tool}",
@@ -329,7 +326,7 @@ class ActionPredictor:
             confidence = "none"
         out = dict(prediction)
         out["confidence"] = confidence
-        out["needs_confirmation"] = out.get("tool") in {"run_command", "write_file", "spawn_subagent"}
+        out["needs_confirmation"] = out.get("tool") in {"write_file", "spawn_subagent"}
         return out
 
     def _record(self, event: str, extraction: dict[str, Any], prediction: dict[str, Any]) -> None:

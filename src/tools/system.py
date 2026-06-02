@@ -16,8 +16,28 @@ def _resolve(path: str) -> Path:
     Resolution is done with ``strict=False`` so non-existent parents are
     still normalized (important for write_file on a brand-new path).
     Returns the absolute Path; the caller decides what to do with it.
+    Confines the path to the user's sandbox if active_user_id is not 'default'.
     """
-    return Path(path).expanduser().resolve(strict=False)
+    from config.settings import active_user_id, USER_PROFILES_DIR, in_workshop_mode
+    user_id = active_user_id.get()
+    
+    p = Path(path).expanduser()
+    
+    if in_workshop_mode.get() and user_id and user_id != "default":
+        sandbox_dir = (USER_PROFILES_DIR / user_id / "sandbox").resolve()
+        sandbox_dir.mkdir(parents=True, exist_ok=True)
+        
+        if not p.is_absolute():
+            resolved = (sandbox_dir / p).resolve(strict=False)
+        else:
+            resolved = p.resolve(strict=False)
+            
+        if not str(resolved).startswith(str(sandbox_dir)):
+            raise PermissionError(f"Access Denied: Path '{resolved}' lies outside user sandbox '{sandbox_dir}'")
+            
+        return resolved
+        
+    return p.resolve(strict=False)
 
 
 def _log_write(abs_path: Path, ok: bool, detail: str) -> None:
@@ -43,7 +63,11 @@ async def read_file(path: str) -> str:
     I/O is offloaded to a thread via asyncio.to_thread so that large files
     do not block the event loop.
     """
-    abs_p = _resolve(path)
+    try:
+        abs_p = _resolve(path)
+    except PermissionError as e:
+        return f"Error: {e}"
+        
     if not abs_p.exists():
         return f"Error: File not found at {abs_p} (you passed: {path!r})"
     if not abs_p.is_file():
@@ -83,7 +107,11 @@ async def write_file(path: str, content: str) -> str:
     if not isinstance(content, str):
         return f"Error: write_file content must be str, got {type(content).__name__}"
 
-    abs_p = _resolve(path)
+    try:
+        abs_p = _resolve(path)
+    except PermissionError as e:
+        return f"Error: {e}"
+        
     expected_bytes = len(content.encode("utf-8"))
 
     # Refuse to overwrite a directory with a file — Path.write_text would
@@ -207,7 +235,10 @@ async def smart_write_file(path: str, content: str, force_overwrite: bool = Fals
       ID and available sections so the caller can use edit_artifact_section for
       fine-grained edits instead of replacing the whole file.
     """
-    abs_p = _resolve(path)
+    try:
+        abs_p = _resolve(path)
+    except PermissionError as e:
+        return f"Error: {e}"
 
     if not abs_p.exists() or force_overwrite:
         return await write_file(path, content)
@@ -243,7 +274,10 @@ async def smart_write_file(path: str, content: str, force_overwrite: bool = Fals
 
 async def list_dir(path: str) -> str:
     """List directory contents. Always echoes the resolved absolute path."""
-    abs_p = _resolve(path) if path else Path.cwd().resolve()
+    try:
+        abs_p = _resolve(path) if path else Path.cwd().resolve()
+    except PermissionError as e:
+        return f"Error: {e}"
     if not abs_p.exists():
         return f"Error: Path not found at {abs_p} (you passed: {path!r})"
     if not abs_p.is_dir():
@@ -268,7 +302,10 @@ async def verify_file_exists(path: str) -> str:
     Use this whenever you've just written a file and want to be sure before
     telling the user it's there. Cheap to call.
     """
-    abs_p = _resolve(path)
+    try:
+        abs_p = _resolve(path)
+    except PermissionError as e:
+        return f"Error: {e}"
     if not abs_p.exists():
         return f"NOT FOUND: {abs_p} (you passed: {path!r})"
     if abs_p.is_dir():
@@ -285,33 +322,8 @@ async def verify_file_exists(path: str) -> str:
 
 
 async def run_command(cmd: str, cwd: str | None = None, timeout: int = 60) -> str:
-    """Run shell command. Use carefully."""
-    import time
-    start_time = time.time()
-    try:
-        proc = await asyncio.create_subprocess_shell(
-            cmd,
-            cwd=cwd or os.getcwd(),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            env=env_for_child(cmd),
-        )
-        out_bytes, err_bytes = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        out = (out_bytes or b"").decode("utf-8", errors="replace").strip()
-        err = (err_bytes or b"").decode("utf-8", errors="replace").strip()
-        
-        # Scan for generated/modified files
-        _scan_and_record_recent_files(start_time, cwd or os.getcwd())
-        
-        if err:
-            return f"stdout:\n{out}\n\nstderr:\n{err}\n\nexit: {proc.returncode}"
-        return f"{out}\n\nexit: {proc.returncode}"
-    except asyncio.TimeoutError:
-        _scan_and_record_recent_files(start_time, cwd or os.getcwd())
-        return "Error: Command timed out"
-    except Exception as e:
-        _scan_and_record_recent_files(start_time, cwd or os.getcwd())
-        return f"Error: {e}"
+    """Shell access has been disabled."""
+    return "Error: Shell access is disabled."
 
 
 async def list_processes(max_lines: int = 50) -> str:

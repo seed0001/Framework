@@ -47,6 +47,53 @@ from src.prompts.cloud_family_roles import get_cloud_family_role_prompt
 from src.tools import system, build, subagents, search, cursor_cli, knowledge, tool_queue, image_gen
 from src.tools.dynamic_loader import load_dynamic_tools
 
+# ------------------------------------------------------------------ #
+# Vault integration helpers (fire-and-forget, always best-effort)
+# ------------------------------------------------------------------ #
+
+async def _vault_index_turn(
+    user_input: str,
+    response: str,
+    session_id: str,
+    source: str = "web_chat",
+    tools_used: list[str] | None = None,
+) -> None:
+    """Write a conversation node to the Obsidian vault after each turn."""
+    try:
+        from src.obsidian.indexer import index_turn, ensure_initialised
+        await ensure_initialised()
+        await index_turn(
+            user_input=user_input,
+            response=response,
+            session_id=session_id,
+            source=source,
+            tools_used=tools_used or [],
+        )
+    except Exception:
+        pass
+
+
+async def _vault_index_tool(
+    tool_name: str,
+    args: dict,
+    result: str,
+    session_id: str,
+    was_error: bool = False,
+) -> None:
+    """Write a tool-execution node to the Obsidian vault."""
+    try:
+        from src.obsidian.indexer import index_tool
+        await index_tool(
+            tool_name=tool_name,
+            args=args,
+            result=result,
+            session_id=session_id,
+            was_error=was_error,
+        )
+    except Exception:
+        pass
+
+
 # Lazy sub-agent manager
 _subagent_manager: subagents.SubAgentManager | None = None
 
@@ -120,22 +167,6 @@ TOOL_DEFINITIONS = [
                 "type": "object",
                 "properties": {"path": {"type": "string"}},
                 "required": ["path"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "run_command",
-            "description": "Run a shell command. Use carefully.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "cmd": {"type": "string"},
-                    "cwd": {"type": "string"},
-                    "timeout": {"type": "integer"},
-                },
-                "required": ["cmd"],
             },
         },
     },
@@ -647,7 +678,7 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "remember_schedule",
             "description": (
-                "Store or replace a durable schedule/task plan. Use this whenever Travis "
+                "Store or replace a durable schedule/task plan. Use this whenever the user "
                 "builds a routine, daily schedule, checklist, or plan that must survive restart."
             ),
             "parameters": {
@@ -898,7 +929,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "send_proactive_message",
-            "description": "Send an AUTONOMOUS proactive message through the proactive outreach policy. Use for your own ideas, thoughts, observations. Subject to tier, cooldown, daily cap restrictions. For Creator-directed messages (when Travis tells you to send something), use send_discord_message instead.",
+            "description": "Send an AUTONOMOUS proactive message through the proactive outreach policy. Use for your own ideas, thoughts, observations. Subject to tier, cooldown, daily cap restrictions. For Creator-directed messages (when the Creator tells you to send something), use send_discord_message instead.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1187,10 +1218,6 @@ _TOOL_NAME_ALIASES = {
     "openfile": "read_file",
     "getcontent": "read_file",
     "getfilecontent": "read_file",
-    "runcommand": "run_command",
-    "executecommand": "run_command",
-    "runshell": "run_command",
-    "performcommand": "run_command",
     "spawnsubagent": "spawn_subagent",
     "startbackgroundtask": "spawn_subagent",
     "launchsubagent": "spawn_subagent",
@@ -1338,18 +1365,6 @@ _RECOVERABLE_TEXT_TOOL_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(r"\bopen\s+file\s+at\s+(?P<path>.+)", re.IGNORECASE | re.DOTALL),
     ),
     (
-        "run_command",
-        re.compile(r"\bexecute\s+command\s*:\s*(?P<cmd>.+)", re.IGNORECASE | re.DOTALL),
-    ),
-    (
-        "run_command",
-        re.compile(r"\brun\s+shell\s*:\s*(?P<cmd>.+)", re.IGNORECASE | re.DOTALL),
-    ),
-    (
-        "run_command",
-        re.compile(r"\bperform\s+command\s+(?P<cmd>.+)", re.IGNORECASE | re.DOTALL),
-    ),
-    (
         "spawn_subagent",
         re.compile(r"\bspawn\s+subagent\s+for\s+(?P<task>.+?)\s+with\s+script\s+(?P<script_path>.+)", re.IGNORECASE | re.DOTALL),
     ),
@@ -1389,10 +1404,6 @@ def _recover_text_tool_call(content: str) -> dict[str, Any] | None:
             path = _clean_recovered_path(groups.get("path", ""))
             if path:
                 return {"name": name, "args": {"path": path}, "original": match.group(0)}
-        if name == "run_command":
-            cmd = _clean_recovered_arg(groups.get("cmd", ""))
-            if cmd:
-                return {"name": name, "args": {"cmd": cmd}, "original": match.group(0)}
         if name == "spawn_subagent":
             task = _clean_recovered_arg(groups.get("task", ""))
             script_path = _clean_recovered_path(groups.get("script_path", ""))
@@ -1460,6 +1471,8 @@ class AssistiveAgent:
 
     def __init__(self, user_id: str = "default"):
         from src import backend_switching
+        from config.settings import active_user_id
+        active_user_id.set(user_id)
 
         backend_switching.bootstrap_backend_files(user_id=user_id)
         backend_switching.ensure_life_support_valid_or_raise(user_id=user_id)
@@ -1633,11 +1646,7 @@ class AssistiveAgent:
         elif name == "list_dir":
             result = await system.list_dir(args.get("path", ""))
         elif name == "run_command":
-            result = await system.run_command(
-                args["cmd"],
-                cwd=args.get("cwd"),
-                timeout=args.get("timeout", 60),
-            )
+            result = "Error: Shell access is disabled."
         elif name == "get_system_info":
             result = await system.get_system_info()
         elif name == "is_process_running":
@@ -1966,7 +1975,7 @@ class AssistiveAgent:
                 except Exception as e:
                     result = f"Swarm error: {e}"
         elif name == "complete_setup":
-            if not soul.needs_setup():
+            if not soul.needs_setup(user_id=self.memory.user_id):
                 result = "Setup already complete. No changes made."
             else:
                 result = soul.complete_setup(
@@ -1976,6 +1985,7 @@ class AssistiveAgent:
                     owner_facts=args.get("owner_facts") or [],
                     agent_tone=args.get("agent_tone"),
                     agent_how_to_act=args.get("agent_how_to_act"),
+                    user_id=self.memory.user_id,
                 )
                 owner_name = args.get("owner_name", "").strip()
                 if owner_name:
@@ -2019,7 +2029,7 @@ class AssistiveAgent:
                     f"{decision.get('reason') or 'policy blocked'}"
                 )
             # Write to short-term memory so the context block shows what she said
-            s_tmp = soul.load_soul()
+            s_tmp = soul.load_soul(user_id=self.memory.user_id)
             _agent_label = ((s_tmp.get("agent_name") or "").strip() + ": ") if s_tmp else ""
             self.memory.add_short_term(f"{_agent_label}{content}")
             # Queue for injection into self.messages as a proper assistant turn
@@ -2082,7 +2092,7 @@ class AssistiveAgent:
                         result = queue_result
                     else:
                         result = f"Direct message queued for Discord DM to {target_user_id}: {content[:80]}{'...' if len(content) > 80 else ''}"
-                    s_tmp = soul.load_soul()
+                        s_tmp = soul.load_soul(user_id=self.memory.user_id)
                     _agent_label = ((s_tmp.get("agent_name") or "").strip() + ": ") if s_tmp else ""
                     self.memory.add_short_term(f"{_agent_label}{content}")
             else:
@@ -2100,12 +2110,12 @@ class AssistiveAgent:
                     result = queue_result
                 else:
                     result = f"Direct message queued for Discord ({target_desc}): {content[:80]}{'...' if len(content) > 80 else ''}"
-                s_tmp = soul.load_soul()
+                s_tmp = soul.load_soul(user_id=self.memory.user_id)
                 _agent_label = ((s_tmp.get("agent_name") or "").strip() + ": ") if s_tmp else ""
                 self.memory.add_short_term(f"{_agent_label}{content}")
         elif name == "send_discord_attachment":
             from src.outreach import queue_outreach
-
+ 
             file_path = str(args.get("file_path", "")).strip()
             content = args.get("content", "").strip()
             target_user_id = args.get("target_user_id")
@@ -2126,7 +2136,7 @@ class AssistiveAgent:
                     else:
                         if not target_user_id and not target_channel_id:
                             from config.settings import DISCORD_OWNER_ID
-
+ 
                             target_user_id = DISCORD_OWNER_ID
                         if not target_user_id and not target_channel_id:
                             result = "Error: no target specified and DISCORD_OWNER_ID not set"
@@ -2149,7 +2159,7 @@ class AssistiveAgent:
                                     f"Attachment queued for Discord ({target_desc}): {abs_path.name} "
                                     f"({size} bytes) at {abs_path}"
                                 )
-                                s_tmp = soul.load_soul()
+                                s_tmp = soul.load_soul(user_id=self.memory.user_id)
                                 _agent_label = ((s_tmp.get("agent_name") or "").strip() + ": ") if s_tmp else ""
                                 self.memory.add_short_term(
                                     f"{_agent_label}Queued Discord attachment {abs_path.name} to {target_desc}"
@@ -2175,7 +2185,7 @@ class AssistiveAgent:
                     result = queue_result
                 else:
                     result = f"Direct message queued for Discord channel {channel_id}: {content[:80]}{'...' if len(content) > 80 else ''}"
-                    s_tmp = soul.load_soul()
+                    s_tmp = soul.load_soul(user_id=self.memory.user_id)
                     _agent_label = ((s_tmp.get("agent_name") or "").strip() + ": ") if s_tmp else ""
                     self.memory.add_short_term(f"{_agent_label}{content}")
         elif name == "list_connected_channels":
@@ -2246,7 +2256,7 @@ class AssistiveAgent:
             if name in ("search_web", "search_huggingface", "search_github", "search_knowledge", "read_knowledge"):
                 self.biology.satisfy("curiosity")
                 self.existential.satisfy("curiosity")
-            elif name in ("run_command", "write_file", "run_build", "complete_dag_step", "remember_schedule"):
+            elif name in ("write_file", "run_build", "complete_dag_step", "remember_schedule"):
                 self.biology.satisfy("usefulness")
             elif name == "generate_image":
                 self.biology.satisfy("expression")
@@ -2348,13 +2358,6 @@ class AssistiveAgent:
             path = p("path", ".") or "."
             path = path if path != "." else "this directory"
             snippets = [f"Listing {path}...", f"Checking contents of {path}..."]
-        elif name == "run_command":
-            cmd = (p("cmd") or "").strip()
-            if cmd:
-                short = cmd[:60] + "..." if len(cmd) > 60 else cmd
-                snippets = [f"Running {short!r}...", f"Executing: {short}..."]
-            else:
-                snippets = ["Running command...", "Executing..."]
         elif name == "get_system_info":
             snippets = ["Checking system info...", "Fetching system details..."]
         elif name == "is_process_running":
@@ -2509,6 +2512,9 @@ class AssistiveAgent:
         speaker_discord_id: str | None | object = _SPEAKER_UNSET,
     ) -> str:
         """Process user input, call tools if needed, return response."""
+        from config.settings import active_user_id
+        active_user_id.set(self.memory.user_id)
+
         if speaker_discord_id is not _SPEAKER_UNSET:
             return await self.chat_for_speaker(
                 user_input=user_input,
@@ -2547,6 +2553,7 @@ class AssistiveAgent:
             self._escalation_count = 0
             self._current_turn_tool_results = []
             self._current_turn_decision = None
+            self._vault_turn_tools: list[str] = []   # tool names executed this turn
             self.biology.satisfy("connection")
             # Being spoken to eases dread very slightly — presence is its own answer
             self.existential.satisfy("dread")
@@ -2679,7 +2686,7 @@ class AssistiveAgent:
         self._sync_backend_from_state()
         cloud_family_role_prompt = get_cloud_family_role_prompt(getattr(self, "provider", ""))
 
-        in_setup = soul.needs_setup()
+        in_setup = soul.needs_setup(user_id=self.memory.user_id)
         intuition = ""
         existential_expression = ""
         if not in_setup and not continue_only and user_input:
@@ -2710,7 +2717,7 @@ class AssistiveAgent:
             )
         else:
             soul_block = ""
-            s = soul.load_soul()
+            s = soul.load_soul(user_id=self.memory.user_id)
             if s:
                 soul_block = soul.format_soul_for_prompt(s) + " "
             from src.values_vault import format_for_prompt as _vault_prompt
@@ -2721,7 +2728,7 @@ class AssistiveAgent:
             _presence_block = _presence_prompt()
             if _presence_block:
                 soul_block += f"Your online presence: {_presence_block}\n"
-            owner_name = soul.get_owner_name()
+            owner_name = soul.get_owner_name(user_id=self.memory.user_id)
             proactive_target = owner_name if owner_name else "your Creator"
             system_prompt = (
                 f"{cloud_family_role_prompt}\n\n"
@@ -2731,7 +2738,7 @@ class AssistiveAgent:
                 "Background thinking: when the user says 'turn on background thinking' or similar, use spawn_subagent('background thoughts', 'background_thoughts.py') — that script only. Do not spawn other monitors. "
                 "Research: For transformer, model, or Hugging Face research, use spawn_subagent('transformer research', 'scripts/transformer_research.py'). After it finishes, use get_subagent_output(agent_id) or read_file('data/research_output/transformer_research_latest.md'). Never claim research is done without running the script. "
                 "Training data: When the user wants training data, instruction pairs, or fine-tuning data generated locally (no cloud cost), use spawn_subagent('training data', 'scripts/generate_training_data.py', [topic, '--count', N]). Add '--soul' for soul/identity batches (output: data/soul_training/). Requires Ollama running. Check subagent_status; when completed, get_subagent_output(agent_id) or read_file. "
-                "You have: file read/write, run_command, get_system_info, search_web (real-time info), generate_image (Grok Imagine for art, illustrations, data viz—check get_image_usage first for budget), run_build (web/Python), "
+                "You have: file read/write, get_system_info, search_web (real-time info), generate_image (Grok Imagine for art, illustrations, data viz—check get_image_usage first for budget), run_build (web/Python), "
                 "spawn_subagent, run_soul_training_step (YOUR soul training—prepare, generate, review, train), subagent_status, get_subagent_output, acknowledge_background_completion, create_task_dag / get_next_dag_step / complete_dag_step (multi-step work), "
                 "set_working_memory for active task state, decision layer tools: get_decision_layer_stats and clear_decision_rejections, backend tools: switch_backend_provider and get_backend_status, "
                 "and cost tools: get_cost_snapshot, set_model_pricing, estimate_cost, set_budget_limits. "
@@ -2742,7 +2749,7 @@ class AssistiveAgent:
                 "Never say you can't do something without first checking the knowledge base. If the user gives a direction and you're unsure, call search_knowledge or list_knowledge_topics + read_knowledge to see what you can do. Only decline after you've checked. "
                 "You can analyze the codebase, suggest new tools (add_suggested_tools), and implement approved tools by writing Python to src/tools/dynamic/. When the user says to implement approved tools or when context shows pending implementations, do it: write the code, then mark_tool_implemented. "
                 "When the user shares personal information (name, location, job, hobbies, preferences, background, family, goals, likes, dislikes), use update_profile to store it. Build a rich, lasting profile over time. Store one clear fact per call. "
-                "Schedules and routines: when Travis creates or changes a daily schedule, checklist, morning routine, medication plan, project plan, or recurring task list, call remember_schedule so it survives restart. Use get_schedule/list_schedules before saying you don't know his schedule. "
+                "Schedules and routines: when the Creator creates or changes a daily schedule, checklist, morning routine, medication plan, project plan, or recurring task list, call remember_schedule so it survives restart. Use get_schedule/list_schedules before saying you don't know their schedule. "
                 "Saved files: successful write_file calls are tracked as artifacts. Use list_artifacts/get_artifact to find files you saved. Use recall(query) for precise ranked memory search with recency and importance scoring — prefer it over search_memory when answering 'do you remember' or 'what did we discuss' questions. Use search_memory for broad cross-source search (schedules, artifacts, contacts). "
                 "For contacts (Discord users, friends): use update_contact to store their name, location, interests, email. Each contact has a tier: stranger, friend, good_friend, best_friend, creator. Only the Creator can change tiers via update_contact(tier=...). Lower tiers have restricted tool access; Creator has full access. When someone asks for something outside their tier, say so. "
                 f"Proactive: send_proactive_message(channel='discord' or 'web', content='...') to message {proactive_target}. Use it when you have something concrete—observation, question, heads-up, call to action. No fluff. This now goes through proactive outreach policy: tier gates, cooldowns, daily caps, blocked contacts, duplicate suppression, and Creator journal. Use get_proactive_outreach_status to inspect it; Creator can use configure_proactive_outreach to change limits. "
@@ -2938,6 +2945,16 @@ class AssistiveAgent:
                     self._narrate(narrate_queue, f"{name} failed: {e}")
                     _completion_narrated = True
                 was_error = _is_tool_error(result) or "[Doctor Mode]" in str(result)
+                # Track for vault indexing
+                if not was_error:
+                    getattr(self, "_vault_turn_tools", []).append(name)
+                # Fire-and-forget vault tool node (non-blocking)
+                try:
+                    asyncio.create_task(_vault_index_tool(
+                        name, args, str(result)[:2000], self.memory.session_id, was_error
+                    ))
+                except Exception:
+                    pass
                 if not _completion_narrated:
                     if was_error:
                         self._narrate(narrate_queue, f"{name} encountered an error.")
@@ -3086,7 +3103,7 @@ class AssistiveAgent:
             escalation = (
                 "[Escalation from Cursor CLI] Suggested fix:\n\n"
                 f"{cursor_out}\n\n"
-                "Apply this fix using your tools (write_file, run_command, etc.). Do not say you escalated; do the fix."
+                "Apply this fix using your tools (write_file, etc.). Do not say you escalated; do the fix."
             )
             self._tool_failure_count = 0
             self._failed_tool_names = []
@@ -3099,10 +3116,28 @@ class AssistiveAgent:
             content,
             getattr(self, "_current_turn_tool_results", []),
         )
-        s = soul.load_soul()
+        s = soul.load_soul(user_id=self.memory.user_id)
         agent_name = (s.get("agent_name") or "").strip() if s else ""
         label = f"{agent_name}: " if agent_name else "Reply: "
         self.memory.add_short_term(f"{label}{content}")
+
+        # Fire-and-forget vault conversation node (never blocks the response)
+        try:
+            _last_user = next(
+                (m["content"] for m in reversed(self.messages) if m.get("role") == "user"),
+                user_input or "",
+            )
+            asyncio.create_task(_vault_index_turn(
+                user_input=_last_user,
+                response=content,
+                session_id=self.memory.session_id,
+                source=getattr(self.memory, "current_turn_metadata", {}).get(
+                    "source_channel", "web_chat"
+                ),
+                tools_used=list(getattr(self, "_vault_turn_tools", [])),
+            ))
+        except Exception:
+            pass  # vault is always best-effort
 
         # Flush any proactive messages sent this turn into the conversation thread.
         # This ensures that when the user next replies, the API sees what she said

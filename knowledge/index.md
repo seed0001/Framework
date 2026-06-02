@@ -33,3 +33,5 @@ Use `search_knowledge(query)` to find how-tos, or `read_knowledge(topic)` to rea
 - backend_switching – creator-controlled backend/provider switching with health checks, safe tool-capable fallback, and backend status tools
 - discord – Discord bot integration, DM delivery, outreach
 - contacts – update_contact, get_contacts, trust tiers
+- spokes – hub-and-spoke architecture: what spokes are, the two current spokes (chat, workshop), and how to build a new one using create_spoke tool
+- obsidian_vault – cognitive knowledge graph: vault structure, vault_query tool usage, emergence scanner, SQLite sync, configuration
