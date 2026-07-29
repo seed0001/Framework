@@ -32,3 +32,31 @@ def transcribe_audio(audio_bytes: bytes, language: str = "en") -> str:
         return " ".join(s.text.strip() for s in segments if s.text).strip()
     finally:
         Path(path).unlink(missing_ok=True)
+
+
+def transcribe_pcm(
+    pcm: bytes,
+    language: str = "en",
+    sample_rate: int = 48000,
+    channels: int = 2,
+    sample_width: int = 2,
+) -> str:
+    """Transcribe raw signed-integer PCM (e.g. from a live Discord voice
+    channel via discord-ext-voice-recv, which delivers 48kHz/16-bit/stereo).
+    Wraps it in a real WAV header first so ffmpeg/av decode it correctly."""
+    import wave
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        path = f.name
+        with wave.open(f, "wb") as w:
+            w.setnchannels(channels)
+            w.setsampwidth(sample_width)
+            w.setframerate(sample_rate)
+            w.writeframes(pcm)
+
+    try:
+        model = _get_model()
+        segments, _ = model.transcribe(path, language=language)
+        return " ".join(s.text.strip() for s in segments if s.text).strip()
+    finally:
+        Path(path).unlink(missing_ok=True)

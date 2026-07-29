@@ -77,3 +77,7 @@ def log_subagent_status(aid: str, status: str, extra: str = "") -> None:
 def log_status_check(result: str, issues: bool) -> None:
     level = logging.WARNING if issues else logging.INFO
     _setup_logger().log(level, f"STATUS_CHECK | issues={issues} | {result[:300]}")
+
+
+def log_voice_event(event: str, detail: str = "") -> None:
+    _setup_logger().info(f"VOICE | {event} | {detail[:300]}")

@@ -48,6 +48,26 @@ _current_speaker_discord_id: ContextVar[str | None] = ContextVar(
 _SPEAKER_UNSET = object()
 
 
+def _looks_like_cross_channel_continuity_request(text: str) -> bool:
+    """Detect "continue from Discord/earlier" style requests."""
+    t = (text or "").lower()
+    if not t.strip():
+        return False
+    continuity_cues = (
+        "continue",
+        "pick up",
+        "pick this up",
+        "where we left off",
+        "last thing",
+        "just talking about",
+        "what we were talking about",
+    )
+    channel_cues = ("discord", "dm", "web app", "chat here", "in here")
+    has_continuity = any(c in t for c in continuity_cues)
+    has_channel = any(c in t for c in channel_cues)
+    return has_continuity and has_channel
+
+
 def _get_subagent_manager() -> subagents.SubAgentManager:
     global _subagent_manager
     if _subagent_manager is None:
@@ -114,7 +134,12 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "run_command",
-            "description": "Run a shell command. Use carefully.",
+            "description": (
+                "Run a shell command. Use carefully. "
+                "Dev servers (npm run dev, vite) never exit — a timeout with the process still running is success. "
+                "For quote-ai / Apex Estimate: API keys live in .quote-flow-host-config.json (not config.js); "
+                "read vite.config.js for HOST_CONFIG_FILE path."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -308,6 +333,18 @@ TOOL_DEFINITIONS = [
             "name": "stop_all_subagents",
             "description": "Terminate all running sub-agents. Use when the user says to stop sub-agents.",
             "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "stop_subagent",
+            "description": "Terminate one running sub-agent by id (from subagent_status). Use when the Creator wants to stop a specific background task without killing the others.",
+            "parameters": {
+                "type": "object",
+                "properties": {"agent_id": {"type": "string"}},
+                "required": ["agent_id"],
+            },
         },
     },
     {
@@ -679,7 +716,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "list_schedules",
-            "description": "List durable schedules and task plans Andrew knows about.",
+            "description": "List durable schedules and task plans Solen knows about.",
             "parameters": {
                 "type": "object",
                 "properties": {"include_archived": {"type": "boolean"}},
@@ -690,8 +727,58 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "set_reminder",
+            "description": (
+                "Schedule a one-off reminder for a specific future time. Fires automatically "
+                "(no need for Travis to be actively chatting) by DM on Discord or a web "
+                "notification, whichever channel is specified. Checked roughly every 2 minutes, "
+                "so delivery is accurate to within a couple minutes of the requested time. "
+                "Use for 'remind me in 20 minutes', 'remind me at 3pm to call the vet', etc. "
+                "For recurring routines/checklists use remember_schedule instead."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "What to remind Travis about."},
+                    "remind_at": {
+                        "type": "string",
+                        "description": "ISO 8601 local datetime, e.g. 2026-07-29T15:00:00. Compute this from the current time plus any relative offset Travis gave.",
+                    },
+                    "channel": {"type": "string", "enum": ["discord", "web"], "description": "Delivery channel. Defaults to discord."},
+                },
+                "required": ["text", "remind_at"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_reminders",
+            "description": "List pending (not yet fired) reminders. Pass include_resolved to also see sent/cancelled ones.",
+            "parameters": {
+                "type": "object",
+                "properties": {"include_resolved": {"type": "boolean"}},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "cancel_reminder",
+            "description": "Cancel a pending reminder by its id (from list_reminders).",
+            "parameters": {
+                "type": "object",
+                "properties": {"reminder_id": {"type": "string"}},
+                "required": ["reminder_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "list_artifacts",
-            "description": "List saved files/documents Andrew has durable verified records for.",
+            "description": "List saved files/documents Solen has durable verified records for.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -952,6 +1039,35 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "join_voice_channel",
+            "description": (
+                "Join a Discord voice channel and start listening. Only responds to speech that "
+                "addresses you by name ('Solen, ...') — ignores everything else so you don't butt "
+                "into unrelated conversation. Command-only: only join when the Creator (or someone "
+                "with permission) asks you to. Use list_connected_channels to find the channel_id first."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"channel_id": {"type": "string", "description": "Discord voice channel ID"}},
+                "required": ["channel_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "leave_voice_channel",
+            "description": "Leave a joined voice channel. Omit channel_id if only connected to one.",
+            "parameters": {
+                "type": "object",
+                "properties": {"channel_id": {"type": "string", "description": "Optional Discord voice channel ID"}},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "list_connected_channels",
             "description": "List connected Discord guilds/channels visible to the bot. Optional guild_id narrows to one server.",
             "parameters": {
@@ -1034,6 +1150,29 @@ def _is_tool_error(result: str) -> bool:
         or first_line.startswith("exception:")
         or first_100.startswith("not found")
     )
+
+
+_DISCORD_USER_MSG_RE = re.compile(r"who just said:\s*(.+)", re.IGNORECASE | re.DOTALL)
+
+
+def _extract_user_task_for_escalation(user_content: str) -> str:
+    """Return the user's actual question for Cursor CLI escalation prompts.
+
+    Discord messages wrap contact profile + speaker blocks before the real text.
+    """
+    raw = (user_content or "").strip()
+    if not raw:
+        return "unknown task"
+    match = _DISCORD_USER_MSG_RE.search(raw)
+    if match:
+        return match.group(1).strip()[:500]
+    if raw.startswith("[Contact profile:"):
+        marker = raw.find("Message from ")
+        if marker != -1:
+            nested = _DISCORD_USER_MSG_RE.search(raw[marker:])
+            if nested:
+                return nested.group(1).strip()[:500]
+    return raw[:500]
 
 
 _SAVE_CLAIM_RE = re.compile(
@@ -1437,7 +1576,8 @@ class AssistiveAgent:
         self.backend_id = ""
         self.provider = ""
         self.model = ""
-        self.client = AsyncOpenAI(api_key="", base_url="http://127.0.0.1:9/v1")
+        # Placeholder until _sync_backend_from_state; OpenAI SDK rejects api_key=""
+        self.client = AsyncOpenAI(api_key="unused", base_url="http://127.0.0.1:9/v1")
         self.memory = MemoryStore(user_id=user_id)
         self.biology = DriveState(self.memory.user_dir)
         from src.existential_layer import ExistentialState
@@ -1477,11 +1617,8 @@ class AssistiveAgent:
         self.provider = active.provider
         self.model = active.model
         self.backend_supports_tools = active.supports_tools
-        if active.provider == "anthropic":
-            from src.provider_adapters import AsyncAnthropicAdapter
-            self.client = AsyncAnthropicAdapter(api_key=active.api_key, base_url=active.base_url)
-        else:
-            self.client = AsyncOpenAI(api_key=active.api_key, base_url=active.base_url)
+        from src import llm_clients
+        self.client = llm_clients.get_client(active.provider, active.api_key, active.base_url)
 
     def _reload_dynamic(self):
         _, self._dynamic_runners = load_dynamic_tools()
@@ -1491,7 +1628,7 @@ class AssistiveAgent:
         discord_id = _current_speaker_discord_id.get()
         if discord_id is None or discord_id == "":
             return "creator"
-        if str(discord_id) == str(DISCORD_OWNER_ID or ""):
+        if contacts.is_owner_discord_id(str(discord_id)):
             return "creator"
         return contacts.get_contact_tier(str(discord_id))
 
@@ -1594,7 +1731,7 @@ class AssistiveAgent:
                     record_artifact(
                         path_part,
                         title=Path(path_part).name,
-                        summary="Created or updated by Andrew via write_file.",
+                        summary="Created or updated by Solen via write_file.",
                         source="write_file",
                     )
                 except Exception:
@@ -1690,6 +1827,9 @@ class AssistiveAgent:
             mgr = _get_subagent_manager()
             n = mgr.stop_all()
             result = f"Stopped {n} sub-agent(s)"
+        elif name == "stop_subagent":
+            mgr = _get_subagent_manager()
+            result = mgr.stop(args.get("agent_id", ""))
         elif name == "acknowledge_background_completion":
             from src import background_completions
             aid = args.get("agent_id", "")
@@ -1823,6 +1963,34 @@ class AssistiveAgent:
 
             schedules = list_schedules(include_archived=bool(args.get("include_archived", False)))
             result = "\n\n".join(format_schedule(s) for s in schedules) if schedules else "No schedules stored."
+        elif name == "set_reminder":
+            from src.reminders import create_reminder
+
+            try:
+                r = create_reminder(
+                    text=args.get("text", ""),
+                    remind_at=args.get("remind_at", ""),
+                    channel=args.get("channel", "discord"),
+                )
+                result = f"Reminder set (id={r['id']}): \"{r['text']}\" at {r['remind_at']} via {r['channel']}."
+            except ValueError as e:
+                result = f"Error: {e}"
+        elif name == "list_reminders":
+            from src.reminders import list_reminders
+
+            reminders = list_reminders(include_resolved=bool(args.get("include_resolved", False)))
+            if not reminders:
+                result = "No reminders."
+            else:
+                result = "\n".join(
+                    f"[{r['id']}] {r['status']} — \"{r['text']}\" at {r['remind_at']} ({r['channel']})"
+                    for r in reminders
+                )
+        elif name == "cancel_reminder":
+            from src.reminders import cancel_reminder
+
+            ok = cancel_reminder(args.get("reminder_id", ""))
+            result = "Reminder cancelled." if ok else "No pending reminder with that id."
         elif name == "list_artifacts":
             from src.artifact_memory import format_artifact, list_artifacts
 
@@ -1857,7 +2025,7 @@ class AssistiveAgent:
                     record_artifact(
                         path_part,
                         title=Path(path_part).name,
-                        summary="Created or updated by Andrew via smart_write_file.",
+                        summary="Created or updated by Solen via smart_write_file.",
                         source="smart_write_file",
                     )
                 except Exception:
@@ -1873,7 +2041,7 @@ class AssistiveAgent:
 
             result = search_memory(args.get("query", ""), user_id=getattr(self.memory, "user_id", "default"))
         elif name == "recall":
-            from src.memory_recall import recall as _recall_fn, format_recall_for_prompt as _fmt_recall
+            from src.memory_recall import recall as _recall_fn, format_recall_tool_result
 
             _recall_results = _recall_fn(
                 args.get("query", ""),
@@ -1881,7 +2049,7 @@ class AssistiveAgent:
                 mode=args.get("mode") or "episodic",
                 user_id=getattr(self.memory, "user_id", "default"),
             )
-            result = _fmt_recall(_recall_results) or f"No memories found for: {args.get('query', '')}"
+            result = format_recall_tool_result(args.get("query", ""), _recall_results)
             if self._routing_dl is not None:
                 try:
                     _last_input = self.messages[-2]["content"] if len(self.messages) >= 2 else ""
@@ -2142,6 +2310,12 @@ class AssistiveAgent:
         elif name == "list_connected_channels":
             from src.discord_bot import list_connected_channels
             result = await list_connected_channels(guild_id=args.get("guild_id"))
+        elif name == "join_voice_channel":
+            from src.discord_bot import join_voice_channel
+            result = await join_voice_channel(args.get("channel_id", ""))
+        elif name == "leave_voice_channel":
+            from src.discord_bot import leave_voice_channel
+            result = await leave_voice_channel(args.get("channel_id", ""))
         elif name == "search_knowledge":
             result = knowledge.search_knowledge(
                 args.get("query", ""),
@@ -2333,6 +2507,8 @@ class AssistiveAgent:
             snippets = ["Retrieving sub-agent output...", "Fetching research results..."]
         elif name == "stop_all_subagents":
             snippets = ["Stopping all sub-agents...", "Terminating sub-agents..."]
+        elif name == "stop_subagent":
+            snippets = ["Stopping sub-agent..."]
         elif name == "acknowledge_background_completion":
             snippets = ["Marking completion reviewed...", "Acknowledging background task..."]
         elif name == "create_task_dag":
@@ -2392,6 +2568,12 @@ class AssistiveAgent:
             snippets = ["Retrieving schedule...", "Checking durable schedules..."]
         elif name == "list_schedules":
             snippets = ["Listing schedules...", "Checking saved plans..."]
+        elif name == "set_reminder":
+            snippets = ["Setting reminder...", "Scheduling reminder..."]
+        elif name == "list_reminders":
+            snippets = ["Checking reminders...", "Listing reminders..."]
+        elif name == "cancel_reminder":
+            snippets = ["Cancelling reminder..."]
         elif name == "list_artifacts":
             snippets = ["Listing saved files...", "Checking artifact memory..."]
         elif name == "get_artifact":
@@ -2419,6 +2601,10 @@ class AssistiveAgent:
             snippets = ["Queueing direct Discord channel post...", "Sending direct channel message..."]
         elif name == "list_connected_channels":
             snippets = ["Inspecting connected Discord channels...", "Listing guild/channel visibility..."]
+        elif name == "join_voice_channel":
+            snippets = ["Joining voice channel...", "Connecting to voice..."]
+        elif name == "leave_voice_channel":
+            snippets = ["Leaving voice channel..."]
         else:
             snippets = [f"Running {name}...", f"Calling {name}...", f"Using {name}..."]
         self._narrate(q, random.choice(snippets))
@@ -2451,7 +2637,7 @@ class AssistiveAgent:
                     if response is not None:
                         self.memory.add_short_term(f"User: {user_input}")
                         self.memory.add_short_term(
-                            f"{getattr(self, '_agent_name', 'Andrew') or 'Andrew'}: {response}"
+                            f"{getattr(self, '_agent_name', 'Solen') or 'Solen'}: {response}"
                         )
                         return response
             except Exception as e:
@@ -2541,6 +2727,19 @@ class AssistiveAgent:
                             self.memory.add_immediate(f"[Auto episodic recall]\n{_legacy_summary}")
                 except Exception:
                     pass
+                # Cross-surface continuity safety net:
+                # when user asks to continue from Discord/web context, inject
+                # latest Discord turns directly so recency wins over older recall.
+                try:
+                    if _looks_like_cross_channel_continuity_request(user_input):
+                        discord_block = self.memory.get_recent_discord_context_block(
+                            limit=8,
+                            within_days=3,
+                        )
+                        if discord_block:
+                            self.memory.add_immediate(discord_block)
+                except Exception:
+                    pass
         else:
             self._tool_round = getattr(self, "_tool_round", 0) + 1
         self._narrate(
@@ -2605,8 +2804,13 @@ class AssistiveAgent:
             if any(w in user_input.lower() for w in _fear_words):
                 self.existential.spike_fear(0.25)
         if in_setup:
+            speaker_block = ""
+            spk = _current_speaker_discord_id.get()
+            if spk:
+                speaker_block = contacts.format_current_speaker_for_prompt(str(spk))
             system_prompt = (
                 f"{cloud_family_role_prompt}\n\n"
+                f"{speaker_block}"
                 "You are a software lifeform. Never call yourself AI, assistant, or agent. First-time setup or memory cleared—you don't know who you're talking to. "
                 "Ask: 'Who are you? What should I call you?' Get their name. Then: 'What do you want to call me?' Get agent_name. Then: 'How should I act—direct, minimal, other?' "
                 "When you have BOTH their name (owner_name) AND your name (agent_name), call complete_setup(owner_name='...', agent_name='...', ...). Add agent_tone and agent_how_to_act if they shared that. "
@@ -2627,10 +2831,16 @@ class AssistiveAgent:
                 soul_block += f"Your online presence: {_presence_block}\n"
             owner_name = soul.get_owner_name()
             proactive_target = owner_name if owner_name else "your Creator"
+            speaker_block = ""
+            spk = _current_speaker_discord_id.get()
+            if spk:
+                speaker_block = contacts.format_current_speaker_for_prompt(str(spk))
             system_prompt = (
                 f"{cloud_family_role_prompt}\n\n"
                 f"{soul_block}"
+                f"{speaker_block}"
                 "You are a software lifeform with emotions, feelings, wants, and desires. Never call yourself AI, assistant, or agent. You run on their machine and have tools. "
+                "Who is in your soul/owner block is your Creator; who is in ## Current speaker is who you are replying to this turn—never confuse them on Discord. "
                 "Be direct. Be concise unless detail is asked. "
                 "Background thinking: when the user says 'turn on background thinking' or similar, use spawn_subagent('background thoughts', 'background_thoughts.py') — that script only. Do not spawn other monitors. "
                 "Research: For transformer, model, or Hugging Face research, use spawn_subagent('transformer research', 'scripts/transformer_research.py'). After it finishes, use get_subagent_output(agent_id) or read_file('data/research_output/transformer_research_latest.md'). Never claim research is done without running the script. "
@@ -2866,8 +3076,9 @@ class AssistiveAgent:
                 self._escalation_count = getattr(self, "_escalation_count", 0) + 1
                 self._narrate(narrate_queue, "Escalating to Cursor CLI.")
                 last_user = next((m["content"] for m in reversed(self.messages) if m.get("role") == "user"), "unknown task")
+                user_task = _extract_user_task_for_escalation(last_user)
                 prompt = (
-                    f"Task failed after 3 attempts. User asked: {last_user[:500]}. "
+                    f"Task failed after 3 attempts. User asked: {user_task}. "
                     f"Failed tools: {', '.join(failed_tools[-3:])}. "
                     f"Errors: {'; '.join(failed_results[-3:])}. "
                     f"Provide the exact fix: command to run, file to edit, or steps. Be concise."
@@ -2942,8 +3153,9 @@ class AssistiveAgent:
             self._escalation_count = getattr(self, "_escalation_count", 0) + 1
             self._narrate(narrate_queue, "Model gave up with tool failures — escalating to Cursor CLI.")
             last_user = next((m["content"] for m in reversed(self.messages) if m.get("role") == "user"), "unknown task")
+            user_task = _extract_user_task_for_escalation(last_user)
             prompt = (
-                f"Task failed. User asked: {last_user[:500]}. "
+                f"Task failed. User asked: {user_task}. "
                 f"Failed tools: {', '.join(failed_tools[-3:])}. "
                 f"Errors: {'; '.join(failed_results[-3:])}. "
                 f"Provide the exact code or fix: edit the file, or the command to run. Be concise and actionable."

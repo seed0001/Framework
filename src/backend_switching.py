@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from openai import AsyncOpenAI
 
 from config.settings import (
     GEMINI_API_KEY,
@@ -764,12 +763,9 @@ async def health_check_backend(
             "message": f"{b.api_key_env} is not set.",
         }
     try:
-        if b.provider == "anthropic":
-            from src.provider_adapters import AsyncAnthropicAdapter
-            client = AsyncAnthropicAdapter(api_key=b.api_key, base_url=b.base_url)
-        else:
-            client = AsyncOpenAI(api_key=b.api_key, base_url=b.base_url)
-        
+        from src import llm_clients
+        client = llm_clients.get_client(b.provider, b.api_key, b.base_url)
+
         try:
             await client.chat.completions.create(
                 model=b.model,

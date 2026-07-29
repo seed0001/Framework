@@ -12,6 +12,8 @@ from src.agent.memory_db import db_path
 from src.artifact_memory import format_artifact, search_artifacts
 from src.schedule_memory import format_schedule, list_schedules
 
+from src.memory_dedup import RECALL_APPROX_MIN_SCORE, RECALL_MIN_SCORE
+
 
 # ── Legacy shape (kept for backward compat) ───────────────────────────────────
 
@@ -88,6 +90,8 @@ def recall(
     top_k: int = 5,
     mode: str = "episodic",
     user_id: str = "default",
+    min_score: float | None = None,
+    allow_approximate: bool = True,
 ) -> list[RecallResult]:
     """Return the top-*k* ranked memories relevant to *query*.
 
@@ -109,9 +113,49 @@ def recall(
         >>> results = recall("what did we discuss about the project?", top_k=3)
         >>> [r.source for r in results]  # ['episodic', 'episodic', 'profile']
     """
+    threshold = RECALL_MIN_SCORE if min_score is None else min_score
     if mode == "semantic":
-        return _recall_semantic(query, top_k=top_k, user_id=user_id)
-    return _recall_episodic(query, top_k=top_k, user_id=user_id)
+        results = _recall_semantic(query, top_k=top_k, user_id=user_id, min_score=threshold)
+    else:
+        results = _recall_episodic(query, top_k=top_k, user_id=user_id, min_score=threshold)
+
+    strong = [r for r in results if r.score >= threshold]
+    if strong:
+        return strong[:top_k]
+
+    if not allow_approximate or not (query or "").strip():
+        from src.memory_dedup import log_recall_failure
+
+        log_recall_failure(
+            query=query,
+            user_id=user_id,
+            mode=mode,
+            note="no_results",
+        )
+        return []
+
+    approx = _recall_approximate(query, top_k=top_k, mode=mode, user_id=user_id)
+    if approx:
+        approx[0].metadata["approximate_match"] = True
+        from src.memory_dedup import log_recall_failure
+
+        log_recall_failure(
+            query=query,
+            user_id=user_id,
+            mode=mode,
+            note="approximate_match",
+            closest={
+                "source": approx[0].source,
+                "score": approx[0].score,
+                "content_preview": approx[0].content[:200],
+            },
+        )
+        return approx
+
+    from src.memory_dedup import log_recall_failure
+
+    log_recall_failure(query=query, user_id=user_id, mode=mode, note="no_results")
+    return []
 
 
 def format_recall_for_prompt(
@@ -132,6 +176,10 @@ def format_recall_for_prompt(
     if not results:
         return ""
     lines = [header]
+    if results[0].metadata.get("approximate_match"):
+        lines.append(
+            "No exact match found. Here's a related memory:"
+        )
     for r in results:
         ts = f"[{r.timestamp}] " if r.timestamp else ""
         snippet = r.content[:max_content_chars].replace("\n", " ")
@@ -140,9 +188,39 @@ def format_recall_for_prompt(
     return "\n".join(lines)
 
 
+def format_recall_tool_result(query: str, results: list[RecallResult]) -> str:
+    """Format recall results for the agent tool, including approximate-match note."""
+    if not results:
+        return f"No memories found for: {query}"
+    return format_recall_for_prompt(results, header=f"Memory recall for: {query}")
+
+
 # ── Episodic recall (lexical + recency + importance) ──────────────────────────
 
-def _recall_episodic(query: str, top_k: int, user_id: str) -> list[RecallResult]:
+def _recall_approximate(
+    query: str,
+    *,
+    top_k: int,
+    mode: str,
+    user_id: str,
+) -> list[RecallResult]:
+    if mode == "semantic":
+        hits = _recall_semantic(
+            query, top_k=top_k, user_id=user_id, min_score=RECALL_APPROX_MIN_SCORE
+        )
+    else:
+        hits = _recall_episodic(
+            query, top_k=top_k, user_id=user_id, min_score=RECALL_APPROX_MIN_SCORE
+        )
+    if not hits:
+        return []
+    hits[0].metadata["approximate_match"] = True
+    return hits[:top_k]
+
+
+def _recall_episodic(
+    query: str, top_k: int, user_id: str, min_score: float = 0.0
+) -> list[RecallResult]:
     q_words = _words(query)
     if not q_words:
         return []
@@ -219,31 +297,58 @@ def _recall_episodic(query: str, top_k: int, user_id: str) -> list[RecallResult]
         con.close()
 
     results.sort(key=lambda r: r.score, reverse=True)
-    return results[:top_k]
+    return [r for r in results[:top_k] if r.score >= min_score] or results[:top_k]
 
 
 # ── Semantic recall (embedding cosine similarity) ─────────────────────────────
 
-def _recall_semantic(query: str, top_k: int, user_id: str) -> list[RecallResult]:
+def _recall_semantic(
+    query: str, top_k: int, user_id: str, min_score: float = RECALL_MIN_SCORE
+) -> list[RecallResult]:
     try:
         from src.agent.memory_embeddings import SemanticIndex
 
         idx = SemanticIndex(user_id)
         if not idx.service.is_available:
             return _recall_episodic(query, top_k=top_k, user_id=user_id)
-        hits = idx.find_similar_text(query, limit=top_k, source_table="episodic_memory")
+        hits = idx.find_similar_text(
+            query, limit=top_k * 3, source_table="episodic_memory", min_score=min_score * 0.5
+        )
         if not hits:
-            return _recall_episodic(query, top_k=top_k, user_id=user_id)
-        return [
-            RecallResult(
-                source="episodic_semantic",
-                title=h.source_id,
-                content=h.content,
-                score=round(float(h.score), 4),
-                metadata={"embedding_id": h.embedding_id},
-            )
-            for h in hits
-        ]
+            return _recall_episodic(query, top_k=top_k, user_id=user_id, min_score=min_score)
+        path = db_path(user_id)
+        results: list[RecallResult] = []
+        con = sqlite3.connect(path) if path.exists() else None
+        try:
+            for h in hits:
+                created_at = None
+                importance = 0.5
+                if con:
+                    row = con.execute(
+                        "SELECT created_at, importance FROM episodic_memory WHERE id = ?",
+                        (h.source_id,),
+                    ).fetchone()
+                    if row:
+                        created_at = row["created_at"]
+                        importance = float(row["importance"] or 0.5)
+                recency = _recency_score(created_at)
+                combined = round(0.70 * float(h.score) + 0.20 * recency + 0.10 * importance, 4)
+                results.append(
+                    RecallResult(
+                        source="episodic_semantic",
+                        title=h.source_id,
+                        content=h.content,
+                        score=combined,
+                        timestamp=created_at,
+                        metadata={"embedding_id": h.embedding_id, "semantic_score": h.score},
+                    )
+                )
+        finally:
+            if con:
+                con.close()
+        results.sort(key=lambda r: r.score, reverse=True)
+        filtered = [r for r in results if r.score >= min_score]
+        return filtered[:top_k] if filtered else results[:top_k]
     except Exception:
         return _recall_episodic(query, top_k=top_k, user_id=user_id)
 

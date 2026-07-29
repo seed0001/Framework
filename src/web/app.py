@@ -10,7 +10,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from config.settings import WEB_HOST, WEB_PORT
+from config.settings import WEB_HOST, WEB_PORT, WEB_SSL, WEB_SSL_CERT, WEB_SSL_KEY
 from src.agent import core as agent_core
 from src.agent.core import AssistiveAgent
 from src.tools import tool_queue
@@ -71,13 +71,26 @@ async def _status_check_loop():
 
 
 async def _background_thoughts_loop():
-    """Drive-gated background thinking: runs when connection/expression urges exceed threshold."""
+    """Drive-gated background thinking: runs when connection/expression urges exceed threshold.
+    Also polls for due reminders every tick — reminders fire on their own schedule,
+    independent of the biology drive gate that speculative thoughts use."""
     from background_thoughts import run_once
+    from src.reminders import check_and_fire_reminders
 
-    # Poll interval: check drives every 2 min
+    # Poll interval: check drives + reminders every 2 min
     POLL_SEC = 120
     while True:
         await asyncio.sleep(POLL_SEC)
+        try:
+            check_and_fire_reminders()
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            try:
+                from src.logging_config import log_error
+                log_error("reminder_check", e)
+            except Exception:
+                print(f"Reminder check error: {e}")
         if agent is None:
             continue
         try:
@@ -101,13 +114,13 @@ def _build_consolidator_llm():
     The consolidator follows backend_state.json on each call, so background
     memory work cannot keep using an old .env provider after Andrew switches.
     """
-    from openai import AsyncOpenAI
+    from src import llm_clients
 
     async def _call(system: str, user: str) -> str:
         from src import backend_switching
 
         active = backend_switching.get_active_backend(user_id="default")
-        client = AsyncOpenAI(api_key=active.api_key, base_url=active.base_url)
+        client = llm_clients.get_client(active.provider, active.api_key, active.base_url)
         resp = await client.chat.completions.create(
             model=active.model,
             messages=[
@@ -298,6 +311,24 @@ def _on_subagent_complete(aid: str, task: str, status: str):
 async def lifespan(app: FastAPI):
     global agent, _discord_task, _background_thoughts_task, _status_check_task
     global _consolidator_task, _consolidator_stop
+
+    # discord.py and discord-ext-voice-recv log internal errors (decrypt/decode
+    # failures, dropped packets, etc.) through the stdlib logging module, but
+    # nothing was ever attached to see them — surface them to the console.
+    # DEBUG only on the voice-receive path; WARNING elsewhere to avoid drowning
+    # in heartbeat/gateway noise.
+    import logging as _logging
+    _voice_log_handler = _logging.StreamHandler()
+    _voice_log_handler.setFormatter(_logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s"))
+    for _name, _level in (
+        ("discord", _logging.WARNING),
+        ("discord.ext.voice_recv", _logging.DEBUG),
+        ("discord.voice_client", _logging.DEBUG),
+    ):
+        _lg = _logging.getLogger(_name)
+        _lg.setLevel(_level)
+        _lg.addHandler(_voice_log_handler)
+
     agent = AssistiveAgent(user_id="default")
     from src.tools import subagents
     subagents.set_completion_callback(_on_subagent_complete)
@@ -863,15 +894,32 @@ async def api_speak(text: str = Form(...), voice: str = Form(None)):
 def run():
     import socket
     import uvicorn
+
+    scheme = "https" if WEB_SSL else "http"
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
         s.close()
-        print(f"\n  Mobile: http://{local_ip}:{WEB_PORT}\n")
+        print(f"\n  Local:  {scheme}://127.0.0.1:{WEB_PORT}")
+        print(f"  Mobile: {scheme}://{local_ip}:{WEB_PORT}")
+        if WEB_SSL:
+            print("  (self-signed cert — accept the browser security warning once)\n")
+        else:
+            print()
     except Exception:
-        pass
-    uvicorn.run(app, host=WEB_HOST, port=WEB_PORT)
+        if WEB_SSL:
+            print(f"\n  Local: {scheme}://127.0.0.1:{WEB_PORT}\n")
+
+    uvicorn_kwargs: dict = {"app": app, "host": WEB_HOST, "port": WEB_PORT}
+    if WEB_SSL:
+        from src.web.ssl_certs import ensure_dev_certs
+
+        cert_path, key_path = ensure_dev_certs(WEB_SSL_CERT, WEB_SSL_KEY)
+        uvicorn_kwargs["ssl_certfile"] = str(cert_path)
+        uvicorn_kwargs["ssl_keyfile"] = str(key_path)
+
+    uvicorn.run(**uvicorn_kwargs)
 
 
 if __name__ == "__main__":

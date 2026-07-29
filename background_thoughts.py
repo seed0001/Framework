@@ -25,7 +25,7 @@ load_dotenv()
 
 from openai import AsyncOpenAI
 
-from config.settings import get_api_key, get_base_url, get_chat_model
+from config.settings import get_api_key, get_base_url, get_chat_model, get_llm_provider
 from src.agent.memory_stores import EpisodicStore, ProfileStore, ThoughtStore
 
 
@@ -335,7 +335,9 @@ async def run_once(user_id: str = "default") -> str:
     user_prompt = _build_user_prompt(profile_facts, recent)
 
     model = get_chat_model()
-    client = AsyncOpenAI(api_key=get_api_key(), base_url=get_base_url())
+    from src import llm_clients
+
+    client = llm_clients.get_client(get_llm_provider(), get_api_key(), get_base_url())
     thought = await _generate(client, model, system_prompt, user_prompt)
 
     delivered = False
@@ -395,19 +397,32 @@ def main():
     import random
     import time
 
+    from src.reminders import check_and_fire_reminders
+
     once = "--once" in sys.argv
-    first = True
-    while True:
-        if not once and first:
-            wait = random.randint(900, 1800)
-            time.sleep(wait)
-            first = False
+    if once:
         thought = asyncio.run(run_once())
         print(thought)
-        if once:
-            break
-        wait = random.randint(900, 2700)
-        time.sleep(wait)
+        return
+
+    # Reminders need tighter polling than the thought-generation cadence, so
+    # this loop ticks every 60s for reminders and only runs run_once() on the
+    # slower 15-45min jittered schedule.
+    next_thought_at = time.time() + random.randint(900, 1800)
+    while True:
+        try:
+            fired = check_and_fire_reminders()
+            for text in fired:
+                print(f"[reminder fired] {text}")
+        except Exception as e:
+            print(f"[reminder check failed] {e}")
+
+        if time.time() >= next_thought_at:
+            thought = asyncio.run(run_once())
+            print(thought)
+            next_thought_at = time.time() + random.randint(900, 2700)
+
+        time.sleep(60)
 
 
 if __name__ == "__main__":

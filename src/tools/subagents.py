@@ -146,3 +146,17 @@ class SubAgentManager:
                 except ProcessLookupError:
                     pass
         return stopped
+
+    def stop(self, aid: str) -> str:
+        """Terminate one running sub-agent by id."""
+        a = self.agents.get(aid)
+        if not a:
+            return f"Unknown agent: {aid}"
+        if not a.process or a.process.returncode is not None:
+            return f"{aid} is not running (status={a.status})"
+        try:
+            a.process.terminate()
+            a.status = "stopped"
+            return f"Stopped {aid}"
+        except ProcessLookupError:
+            return f"{aid} already exited"

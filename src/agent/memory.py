@@ -388,12 +388,32 @@ class MemoryStore:
         if not fact:
             return "Empty fact, not stored."
         key = _fact_key(cat, fact)
-        existing = self.profile.get(key)
+        from src.memory_dedup import prepare_profile_fact_write
+
+        decision = prepare_profile_fact_write(
+            self.user_id, key, fact,
+            category=cat, confidence=1.0, source="user",
+        )
+        if decision.action == "skip":
+            return decision.message or "Skipped duplicate."
         try:
-            self.profile.set(key, fact, category=cat, source="user", protected=True)
+            self.profile.set(
+                decision.key,
+                decision.value,
+                category=cat,
+                source="user",
+                protected=True,
+                confidence=decision.confidence,
+                _skip_dedup=True,
+            )
         except ValueError as e:
             return f"Could not store fact: {e}"
-        verb = "Updated" if existing else "Stored"
+        if decision.action == "merge":
+            verb = "Merged"
+        elif decision.action == "save" and self.profile.get(decision.key):
+            verb = "Updated"
+        else:
+            verb = "Stored"
         return f"{verb} in profile ({cat})."
 
     # -- working-state KV (replaces working.json) ---------------------
@@ -519,6 +539,35 @@ class MemoryStore:
                 self.profile.reinforce_many(keys_used)
 
         return "\n".join(parts) if parts else ""
+
+    def get_recent_discord_context_block(self, *, limit: int = 8, within_days: int = 3) -> str:
+        """Return a compact block of the most recent Discord-linked turns.
+
+        This is used as a continuity safety net when the user asks to continue
+        a conversation that happened on Discord from another surface (web/CLI).
+        """
+        rows = self.episodic.get_recent_across_sessions(
+            limit=max(20, limit * 4),
+            within_days=max(1, int(within_days)),
+            exclude_session=None,
+        )
+        hits: list[EpisodicEntry] = []
+        for r in rows:
+            c = (r.content or "").lower()
+            if "discord" in c:
+                hits.append(r)
+        if not hits:
+            return ""
+        # Keep the most recent entries and preserve chronological order.
+        hits = hits[-max(1, int(limit)) :]
+        lines = ["## Recent Discord continuity"]
+        for r in hits:
+            ts = r.created_at.isoformat(timespec="seconds")
+            snippet = (r.content or "").replace("\n", " ")
+            if len(snippet) > 220:
+                snippet = snippet[:217] + "..."
+            lines.append(f"- [{ts}] {snippet}")
+        return "\n".join(lines)
 
     @staticmethod
     def _group_by_category(facts: list[ProfileFact]) -> dict[str, list[ProfileFact]]:

@@ -124,6 +124,23 @@ def remember_schedule(
     now = _now()
     data = _load()
     existing = data["schedules"].get(sid, {})
+    new_items = [ScheduleItem.from_any(i) for i in (items or []) if ScheduleItem.from_any(i).text]
+    if existing:
+        from src.memory_dedup import schedule_is_duplicate
+
+        old_sched = Schedule.from_dict(existing)
+        old_blob = format_schedule(old_sched)
+        if schedule_is_duplicate(title, [i.text for i in new_items], old_blob):
+            from src.memory_dedup import log_duplicate
+
+            log_duplicate(
+                memory_type="schedule",
+                action="skip",
+                content=title,
+                duplicate_of=sid,
+                similarity=1.0,
+            )
+            return old_sched
     sched = Schedule(
         id=sid,
         title=title,
@@ -135,7 +152,7 @@ def remember_schedule(
         file_path=file_path or "",
         created_at=existing.get("created_at") or now,
         updated_at=now,
-        items=[ScheduleItem.from_any(i) for i in (items or []) if ScheduleItem.from_any(i).text],
+        items=new_items,
     )
     data["schedules"][sid] = sched.to_dict()
     _save(data)

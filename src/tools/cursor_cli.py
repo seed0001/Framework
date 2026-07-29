@@ -22,7 +22,7 @@ import shutil
 from dataclasses import dataclass, field
 from typing import Any
 
-from config.settings import CURSOR_API_KEY, CURSOR_CLI_CMD, PROJECT_ROOT
+from config.settings import CURSOR_API_KEY, CURSOR_CLI_CMD, CURSOR_CLI_TRUST, PROJECT_ROOT
 
 
 _CURSOR_NOT_FOUND_MSG = (
@@ -120,9 +120,15 @@ def _build_argv(
     *,
     write: bool,
     output_format: str,
+    cwd: str,
 ) -> list[str]:
     """Build a safe argv list (no shell). prompt is passed as a positional arg."""
     argv = [binary, "-p", prompt, "--output-format", output_format]
+    # Headless runs need workspace trust or the CLI blocks on an interactive prompt.
+    if CURSOR_CLI_TRUST:
+        argv.append("--trust")
+    if cwd:
+        argv.extend(["--workspace", cwd])
     if write:
         # ``--force`` (alias ``--yolo``) is required for file mutations in headless mode.
         argv.append("--force")
@@ -164,7 +170,13 @@ async def run_cursor_cli(
         )
 
     run_cwd = str(cwd) if cwd else str(PROJECT_ROOT)
-    argv = _build_argv(binary, prompt[:8000], write=write, output_format=output_format)
+    argv = _build_argv(
+        binary,
+        prompt[:8000],
+        write=write,
+        output_format=output_format,
+        cwd=run_cwd,
+    )
 
     env = os.environ.copy()
     if CURSOR_API_KEY:

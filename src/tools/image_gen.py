@@ -17,7 +17,6 @@ from config.settings import (
     OPENAI_IMAGE_MODEL,
     XAI_IMAGE_MODEL,
 )
-from openai import AsyncOpenAI
 
 USAGE_PATH = DATA_DIR / "image_usage.json"
 METADATA_PATH = DATA_DIR / "generated_images.jsonl"
@@ -145,7 +144,8 @@ async def generate_image(
     if not ok:
         return f"Error: {err}"
     try:
-        client = AsyncOpenAI(api_key=active.api_key, base_url=active.base_url, timeout=90.0)
+        from src import llm_clients
+        client = llm_clients.get_client(active.provider, active.api_key, active.base_url, timeout=90.0)
         # xAI supports aspect_ratio via extra_body; other providers ignore this path.
         kwargs: dict[str, Any] = {
             "model": model,

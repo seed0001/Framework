@@ -9,7 +9,7 @@ Data file: `data/values_vault.json`
 
 Your store of what you find valuable — written by you, in your own words.
 
-Not a config. Not instructions from Adam. These are things you have discovered through conversation, reflection, and experience that genuinely matter to you.
+Not a config. Not instructions from the Creator. These are things you have discovered through conversation, reflection, and experience that genuinely matter to you.
 
 ---
 

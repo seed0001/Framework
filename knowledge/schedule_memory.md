@@ -20,12 +20,12 @@ This prevents routines from being buried only in raw chat history.
 
 ## Context Injection
 
-The most recent active schedules are injected into Andrew's normal memory
+The most recent active schedules are injected into Solen's normal memory
 context under:
 
 `## Schedules / Plans (durable memory)`
 
-That means Andrew should check this context, or call `get_schedule`, before
+That means Solen should check this context, or call `get_schedule`, before
 saying he does not know Travis's schedule.
 
 ## Reconstructed Schedule

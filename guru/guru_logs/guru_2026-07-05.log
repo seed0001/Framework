@@ -1,0 +1,12 @@
+[2026-07-05T02:57:45Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-05T06:57:45Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-05T10:57:45Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-05T11:25:51Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-05T11:25:51Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-05T11:25:51Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-05T11:25:51Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-05T11:25:51Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-05T11:25:51Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+[2026-07-05T14:57:45Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-05T18:57:45Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-05T22:57:45Z] [info] quote_skipped | quotes_enabled is false

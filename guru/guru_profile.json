@@ -1,0 +1,55 @@
+{
+  "users": {
+    "default": {
+      "preferred_length": "medium",
+      "favorite_vibes": [
+        "earthy",
+        "calm"
+      ],
+      "banter_lines": [
+        "Alright, let's get cozy, Brandon!"
+      ],
+      "mood": "calm",
+      "sessions": []
+    },
+    "demo_user": {
+      "preferred_length": "medium",
+      "favorite_vibes": [
+        "earthy",
+        "calm"
+      ],
+      "banter_lines": [
+        "Alright, let's get cozy, Brandon!"
+      ],
+      "mood": "calm",
+      "sessions": [
+        {
+          "script": "box_breathing",
+          "rating": 5,
+          "feedback": "demo"
+        },
+        {
+          "script": "box_breathing",
+          "rating": 5,
+          "feedback": "demo"
+        }
+      ]
+    },
+    "531896743063846943": {
+      "preferred_length": "medium",
+      "favorite_vibes": [
+        "earthy",
+        "calm"
+      ],
+      "banter_lines": [
+        "Alright, let's get cozy, Brandon!"
+      ],
+      "mood": "calm",
+      "sessions": [],
+      "notes": [
+        "User wants occasional journal sessions with Garth, noting thoughts and experiences.",
+        "User experienced an unexpected tear during conversation, wants to note this emotional moment."
+      ]
+    }
+  }
+}

@@ -1,0 +1,130 @@
+[2026-07-28T00:24:29Z] [info] bot_ready | Garth#3905
+[2026-07-28T00:27:29Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-28T04:27:27Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-28T08:27:27Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-28T12:27:27Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-28T13:18:20Z] [info] command | start user=531896743063846943
+[2026-07-28T13:18:20Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-28T13:18:22Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-28T13:21:43Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-28T13:21:43Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-28T13:24:05Z] [info] command | skip user=531896743063846943
+[2026-07-28T13:24:06Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-28T13:24:06Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-28T13:32:10Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-28T13:32:10Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-28T13:43:26Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-28T13:43:26Z] [info] ambient_now_playing | meditation leberch
+[2026-07-28T13:46:24Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-28T13:46:24Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-28T13:51:54Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-28T13:51:54Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-28T13:54:06Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-28T13:54:06Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-28T13:56:43Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-28T13:56:43Z] [info] ambient_now_playing | ambient fallback
+[2026-07-28T13:57:26Z] [info] command | skip user=531896743063846943
+[2026-07-28T13:57:26Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-28T13:57:26Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-28T14:02:41Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-28T14:02:41Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-28T14:08:11Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-28T14:08:11Z] [info] ambient_now_playing | violet orbit
+[2026-07-28T14:13:51Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-28T14:13:51Z] [info] ambient_now_playing | calm my mind
+[2026-07-28T14:16:51Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-28T14:16:51Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-28T14:22:08Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-28T14:22:08Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-28T14:24:14Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-28T14:24:14Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-28T14:30:52Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-28T14:30:52Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-28T14:38:56Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-28T14:38:56Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-28T14:43:14Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-28T14:43:14Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-28T14:48:47Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-28T14:48:47Z] [info] ambient_now_playing | meditation leberch
+[2026-07-28T14:51:46Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-28T14:51:46Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-28T14:53:57Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-28T14:53:57Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-28T15:05:13Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-28T15:05:13Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-28T15:08:33Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-28T15:08:33Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-28T15:14:03Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-28T15:14:03Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-28T15:16:41Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-28T15:16:41Z] [info] ambient_now_playing | calm my mind
+[2026-07-28T15:19:40Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-28T15:19:40Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-28T15:24:55Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-28T15:24:55Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-28T15:30:13Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-28T15:30:13Z] [info] ambient_now_playing | violet orbit
+[2026-07-28T15:32:39Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T15:32:39Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T15:32:39Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T15:32:39Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T15:32:39Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T15:32:39Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+[2026-07-28T15:35:53Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-28T15:35:53Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-28T15:42:31Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-28T15:42:31Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-28T15:47:53Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-28T15:47:53Z] [info] ambient_now_playing | ambient fallback
+[2026-07-28T15:53:14Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-28T15:53:14Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-28T15:55:19Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-28T15:55:19Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-28T16:00:49Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-28T16:00:49Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-28T16:06:23Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-28T16:06:23Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-28T16:08:34Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-28T16:08:34Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-28T16:19:51Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-28T16:19:51Z] [info] ambient_now_playing | meditation leberch
+[2026-07-28T16:22:49Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-28T16:22:49Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-28T16:27:06Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-28T16:27:06Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-28T16:27:27Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-28T16:30:26Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-28T16:30:26Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-28T16:33:04Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-28T16:33:04Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-28T16:38:34Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-28T16:38:34Z] [info] ambient_now_playing | calm my mind
+[2026-07-28T16:41:33Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-28T16:41:33Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-28T16:48:11Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-28T16:48:11Z] [info] ambient_now_playing | violet orbit
+[2026-07-28T16:53:52Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-28T16:53:52Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-28T16:55:57Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-28T16:55:57Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-28T17:01:27Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-28T17:01:27Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-28T17:06:42Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-28T17:06:42Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-28T17:07:11Z] [info] command | skip user=531896743063846943
+[2026-07-28T17:07:11Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-28T17:07:11Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-28T17:18:28Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-28T17:18:28Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-28T17:22:16Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:16Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:16Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:16Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:16Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:16Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+[2026-07-28T17:22:21Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:21Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:22Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:22Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:22Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-28T17:22:22Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}

@@ -141,28 +141,21 @@ def get_context_for_speaker(
     Build context line for who's messaging. No hardcoded names.
     When soul exists and we know the owner, use their name.
     """
+    from config.settings import normalize_discord_id
+    from src.contacts import format_current_speaker_for_prompt
+
     soul = load_soul()
     owner_name = (soul.get("owner_name") or "").strip() if soul else ""
-    owner_discord_id = (soul.get("owner_discord_id") or "").strip() if soul else ""
-
-    from config.settings import DISCORD_OWNER_ID
-    is_owner = False
-    if discord_id:
-        is_owner = (
-            str(discord_id) == str(DISCORD_OWNER_ID or "")
-            or str(discord_id) == owner_discord_id
-        )
-    else:
-        is_owner = is_web
 
     if is_web:
         if owner_name:
             return f"[{owner_name} is messaging from the web app (desktop, at home).]\n\n"
         return "[The user is messaging from the web app (desktop, at home).]\n\n"
 
-    if discord_id and is_owner:
-        if owner_name:
-            return f"[{owner_name} is messaging via Discord—remote, likely on a phone, possibly not at home.]\n\n"
-        return "[Your primary user is messaging via Discord—remote, likely on a phone, possibly not at home.]\n\n"
+    if discord_id:
+        return format_current_speaker_for_prompt(
+            normalize_discord_id(discord_id) or str(discord_id),
+            display_name=author_name,
+        )
 
     return ""

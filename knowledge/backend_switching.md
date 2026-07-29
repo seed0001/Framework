@@ -1,6 +1,6 @@
 # Backend Switching
 
-Creator-controlled live backend switching for Andrew.
+Creator-controlled live backend switching for Solen.
 
 ## Core tools
 
@@ -22,7 +22,7 @@ Stored under `data/profiles/default/`:
 - Life-support backend must be tool-capable.
 - Startup validation fails loudly if life-support backend is missing, disabled, or non-tool-capable.
 - Interactive fallback skips non-tool-capable models.
-- If requested backend fails health checks (missing key, quota, timeout, model unavailable), Andrew falls back to a verified tool-capable backend.
+- If requested backend fails health checks (missing key, quota, timeout, model unavailable), Solen falls back to a verified tool-capable backend.
 
 ## Status context
 

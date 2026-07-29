@@ -170,13 +170,33 @@ LUX_NUM_STEPS = int(os.getenv("LUX_NUM_STEPS", "4"))  # 3-4 best speed/quality t
 WEB_HOST = os.getenv("WEB_HOST", "0.0.0.0")
 WEB_PORT = int(os.getenv("WEB_PORT", "8765"))
 
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name, "").strip().lower()
+    if not value:
+        return default
+    return value in {"1", "true", "yes", "on"}
+
+
+# HTTPS for mic/camera on LAN IPs (browsers require secure context off localhost)
+WEB_SSL = _env_bool("WEB_SSL", False)
+WEB_SSL_CERT = Path(os.getenv("WEB_SSL_CERT", str(DATA_DIR / "certs" / "dev.crt"))).resolve()
+WEB_SSL_KEY = Path(os.getenv("WEB_SSL_KEY", str(DATA_DIR / "certs" / "dev.key"))).resolve()
+
 # Cursor CLI (escalation when Doctor Mode exhausts attempts)
 CURSOR_CLI_CMD = os.getenv("CURSOR_CLI_CMD", "agent")
+# Pass --trust on headless agent invocations (avoids interactive workspace trust prompt)
+CURSOR_CLI_TRUST = _env_bool("CURSOR_CLI_TRUST", True)
 CURSOR_API_KEY = os.getenv("CURSOR_API_KEY", "")
 
 # Discord (bot + proactive outreach)
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
-DISCORD_OWNER_ID = os.getenv("DISCORD_OWNER_ID", "")  # Primary owner Discord ID for DMs
+def normalize_discord_id(raw: str) -> str:
+    """Strip non-digits (e.g. accidental ``531896743063846943_id`` in .env)."""
+    return "".join(c for c in (raw or "") if c.isdigit())
+
+
+DISCORD_OWNER_ID = normalize_discord_id(os.getenv("DISCORD_OWNER_ID", ""))
 
 # Soul training base model (Hugging Face)
 SOUL_BASE_MODEL = os.getenv("SOUL_BASE_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")

@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from config.settings import DISCORD_OWNER_ID, USER_PROFILES_DIR
+from config.settings import DISCORD_OWNER_ID, USER_PROFILES_DIR, normalize_discord_id
 
 CONTACTS_PATH = USER_PROFILES_DIR / "default" / "contacts.json"
 
@@ -57,8 +57,71 @@ def _save_contacts(data: dict) -> None:
 def _contact_key(identifier: str, discord_id: str | None = None) -> str:
     """Resolve contact key: discord_id takes precedence, else web-{identifier}."""
     if discord_id:
-        return str(discord_id)
+        nid = normalize_discord_id(discord_id)
+        return nid or str(discord_id).strip()
     return f"web-{identifier or 'anonymous'}"
+
+
+def is_owner_discord_id(discord_id: str | None) -> bool:
+    """True when this Discord user is the Creator/owner (env or soul owner_discord_id)."""
+    did = normalize_discord_id(discord_id or "")
+    if not did:
+        return False
+    if DISCORD_OWNER_ID and did == DISCORD_OWNER_ID:
+        return True
+    try:
+        from src.agent.soul import load_soul
+
+        soul = load_soul()
+        if soul:
+            oid = normalize_discord_id(str(soul.get("owner_discord_id") or ""))
+            if oid and did == oid:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def format_current_speaker_for_prompt(
+    discord_id: str,
+    *,
+    display_name: str = "",
+) -> str:
+    """Strong per-turn speaker block for the system prompt (Discord)."""
+    from src.agent.soul import get_owner_name, load_soul
+
+    did = normalize_discord_id(discord_id)
+    owner = get_owner_name() or "your Creator"
+    soul = load_soul() or {}
+    owner_discord = normalize_discord_id(str(soul.get("owner_discord_id") or "")) or DISCORD_OWNER_ID
+
+    if is_owner_discord_id(did):
+        label = owner or display_name or "your Creator"
+        return (
+            f"## Current speaker (THIS MESSAGE)\n"
+            f"You are talking to **{label}** — your Creator/owner. "
+            f"discord_id={did}. Address them as {label}.\n\n"
+        )
+
+    contact = get_contact("", discord_id=did)
+    name = (contact or {}).get("name") or display_name or "this person"
+    tier = (contact or {}).get("tier", "stranger")
+    profile = format_contact_for_context(contact)
+    lines = [
+        "## Current speaker (THIS MESSAGE)",
+        (
+            f"You are talking to **{name}** — NOT {owner}. "
+            f"discord_id={did}. Tier: {tier}."
+        ),
+        (
+            f"Your owner {owner} (discord_id={owner_discord or 'unknown'}) is someone else. "
+            f"Do not call {name} '{owner}' or '{owner}'s name; use their name."
+        ),
+        "Creator-only tools (switch_backend_provider, tier changes) are not for this speaker unless they are the owner.",
+    ]
+    if profile:
+        lines.append(f"Contact profile:\n{profile}")
+    return "\n".join(lines) + "\n\n"
 
 
 def _slug(text: str) -> str:
@@ -180,7 +243,7 @@ def record_discord_interaction(
         "first_seen": now,
     }
     contact["discord_id"] = str(discord_id)
-    if str(discord_id) == str(DISCORD_OWNER_ID or ""):
+    if is_owner_discord_id(discord_id):
         contact["tier"] = "creator"
         contact["preferred_channel"] = "discord"
     contact["display_name"] = (display_name or "").strip() or contact.get("display_name", "")
@@ -224,7 +287,7 @@ def record_outbound(discord_id: str | None = None, identifier: str = "") -> None
 
 def get_contact_tier(discord_id: str | None, identifier: str = "") -> str:
     """Get tier for a contact. Default stranger."""
-    if discord_id and str(discord_id) == str(DISCORD_OWNER_ID or ""):
+    if is_owner_discord_id(discord_id):
         return "creator"
     contact = get_contact(identifier, discord_id=discord_id)
     if not contact:

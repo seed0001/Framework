@@ -2,6 +2,7 @@
 import asyncio
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -273,10 +274,21 @@ async def verify_file_exists(path: str) -> str:
     return f"EXISTS: {abs_p} ({size} bytes)"
 
 
+_DEV_SERVER_CMD = re.compile(
+    r"\b(npm\s+run\s+dev|npm\s+start|yarn\s+dev|pnpm\s+dev|vite(\s|$)|flask\s+run|uvicorn\b)",
+    re.IGNORECASE,
+)
+_DEV_SERVER_READY = re.compile(
+    r"(localhost:\d+|Local:\s*https?://|ready in \d+|VITE v\d)",
+    re.IGNORECASE,
+)
+
+
 async def run_command(cmd: str, cwd: str | None = None, timeout: int = 60) -> str:
     """Run shell command. Use carefully."""
     import time
     start_time = time.time()
+    proc = None
     try:
         proc = await asyncio.create_subprocess_shell(
             cmd,
@@ -288,15 +300,39 @@ async def run_command(cmd: str, cwd: str | None = None, timeout: int = 60) -> st
         out_bytes, err_bytes = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         out = (out_bytes or b"").decode("utf-8", errors="replace").strip()
         err = (err_bytes or b"").decode("utf-8", errors="replace").strip()
-        
+
         # Scan for generated/modified files
         _scan_and_record_recent_files(start_time, cwd or os.getcwd())
-        
+
         if err:
             return f"stdout:\n{out}\n\nstderr:\n{err}\n\nexit: {proc.returncode}"
         return f"{out}\n\nexit: {proc.returncode}"
     except asyncio.TimeoutError:
         _scan_and_record_recent_files(start_time, cwd or os.getcwd())
+        if proc and proc.returncode is None and _DEV_SERVER_CMD.search(cmd):
+            return (
+                f"OK: Dev server still running (pid={proc.pid}, timed out after {timeout}s). "
+                "Long-running servers like npm run dev / vite do not exit — this is success, not failure. "
+                "Default Vite URL: http://127.0.0.1:5173/ (or use the project's START_*.bat). "
+                "Do not retry the same dev command."
+            )
+        out = ""
+        err = ""
+        if proc and proc.returncode is None:
+            try:
+                proc.kill()
+                out_bytes, err_bytes = await asyncio.wait_for(proc.communicate(), timeout=3)
+                out = (out_bytes or b"").decode("utf-8", errors="replace").strip()
+                err = (err_bytes or b"").decode("utf-8", errors="replace").strip()
+            except Exception:
+                pass
+        combined = f"{out}\n{err}".strip()
+        if _DEV_SERVER_CMD.search(cmd) and _DEV_SERVER_READY.search(combined):
+            return (
+                f"OK: Dev server started (long-running — stopped after {timeout}s capture).\n"
+                f"{combined[:1200]}\n\n"
+                "To keep it running, use spawn_subagent or run the project's START_*.bat in a separate window."
+            )
         return "Error: Command timed out"
     except Exception as e:
         _scan_and_record_recent_files(start_time, cwd or os.getcwd())

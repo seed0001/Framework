@@ -1,6 +1,6 @@
 # Architecture
 
-She is not a single model with prompts. She is layered machinery — each layer has a distinct job.
+He is not a single model with prompts. He is layered machinery — each layer has a distinct job.
 
 ---
 
@@ -9,7 +9,7 @@ She is not a single model with prompts. She is layered machinery — each layer 
 - Primary brain. Heavy cognition, tool use, synthesis, decisions.
 - Sees: system prompt (identity + values + drives + inner states) + conversation thread + memory context.
 - Has all tools: file I/O, shell, search, subagents, DAG orchestration, memory, proactive outreach.
-- Does not generate her inner life — it receives it.
+- Does not generate his inner life — it receives it.
 
 ---
 
@@ -21,12 +21,12 @@ Runs locally. Two distinct jobs each turn:
 - Generates a one-sentence raw felt signal about the current moment in conversation.
 - A gut pull, a hunch, an unease, a draw toward something.
 - Injected as `## A feeling` — no source label, no attribution.
-- She does not know it came from Ollama. It simply arrived.
+- He does not know it came from Ollama. It simply arrived.
 
 **Existential expression** (`src/existential_layer.py`)
 - Three persistent drives: existential curiosity, dread, fear.
 - When the dominant state exceeds its threshold, Ollama generates a one-sentence expression.
-- Injected as `## Underneath` — the weight she carries, not the moment she's reacting to.
+- Injected as `## Underneath` — the weight he carries, not the moment he's reacting to.
 - Fires at most once every 15 minutes.
 
 ---
@@ -46,9 +46,9 @@ Not a model — state that persists across restarts and accumulates over time.
 - Satisfy poorly — these don't resolve easily
 
 **Values vault** (`src/values_vault.py`)
-- What she has decided matters to her, in her own words
+- What he has decided matters to him, in his own words
 - Five categories: principle, beauty, connection, purpose, wonder
-- Injected into her identity block every turn — not a reference doc, part of who she is
+- Injected into his identity block every turn — not a reference doc, part of who he is
 
 ---
 

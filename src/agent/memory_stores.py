@@ -214,6 +214,17 @@ class EpisodicStore:
                source: str = "unknown", task_id: str | None = None,
                importance: float = 0.5, strength: float = 1.0,
                metadata: dict[str, Any] | None = None) -> str:
+        from src.memory_dedup import (
+            index_episodic_turn,
+            is_trivial_episodic,
+            should_skip_episodic_duplicate,
+        )
+
+        if should_skip_episodic_duplicate(self.user_id, content):
+            return ""
+        if is_trivial_episodic(content):
+            importance = min(importance, 0.25)
+
         eid = _uuid()
         meta_str = json.dumps(metadata or {}, ensure_ascii=False)
         self._conn().execute(
@@ -223,6 +234,7 @@ class EpisodicStore:
             (eid, session_id, role, content, source, task_id,
              max(0.0, min(1.0, importance)), max(0.0, strength), meta_str, _now_iso()),
         )
+        index_episodic_turn(self.user_id, eid, content)
         return eid
 
     def get_by_session(self, session_id: str, limit: int = 100) -> list[EpisodicEntry]:
@@ -442,7 +454,8 @@ class ProfileStore:
 
     def set(self, key: str, value: str, *, category: str | None = None,
             confidence: float = 1.0, source: str = "user",
-            protected: bool | None = None) -> str:
+            protected: bool | None = None,
+            _skip_dedup: bool = False) -> str:
         """Insert or update a fact. Versions the previous row via soft-delete.
 
         User-sourced facts are auto-protected unless ``protected=False`` is
@@ -456,6 +469,20 @@ class ProfileStore:
         src = self._normalize_source(source)
         is_protected = (src == "user") if protected is None else bool(protected)
         confidence = max(0.0, min(1.0, float(confidence)))
+
+        if not _skip_dedup:
+            from src.memory_dedup import index_profile_fact, prepare_profile_fact_write
+
+            decision = prepare_profile_fact_write(
+                self.user_id, key, value,
+                category=cat, confidence=confidence, source=src,
+            )
+            if decision.action == "skip" and decision.existing_id:
+                return decision.existing_id
+            key = decision.key
+            value = decision.value
+            confidence = decision.confidence
+
         now = _now_iso()
         new_id = _uuid()
 
@@ -481,6 +508,10 @@ class ProfileStore:
             )
             _audit(conn, "fact_set", "profile_facts", new_id,
                    key=key, version=new_version, source=src)
+        if not _skip_dedup:
+            from src.memory_dedup import index_profile_fact
+
+            index_profile_fact(self.user_id, new_id, cat, value)
         return new_id
 
     def get(self, key: str) -> ProfileFact | None:

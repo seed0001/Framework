@@ -1,0 +1,112 @@
+[2026-05-26T01:47:15Z] [info] garth_tool | join_voice_session {"mode": "chill"}
+[2026-05-26T01:47:16Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-05-26T01:47:16Z] [info] ambient_now_playing | mushroom temple drift
+[2026-05-26T01:55:20Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-05-26T01:55:20Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-05-26T02:00:50Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-05-26T02:00:50Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-05-26T02:03:02Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-05-26T02:03:02Z] [info] ambient_now_playing | calm my mind
+[2026-05-26T02:06:01Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-05-26T02:06:01Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-05-26T02:08:38Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-05-26T02:08:38Z] [info] ambient_now_playing | ambient fallback
+[2026-05-26T02:09:18Z] [info] garth_tool | skip_ambient_track {}
+[2026-05-26T02:09:18Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T02:09:18Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T02:14:58Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-05-26T02:14:58Z] [info] ambient_now_playing | meditation leberch
+[2026-05-26T02:17:36Z] [info] garth_tool | stop_voice_session {"": {}}
+[2026-05-26T02:43:34Z] [info] garth_tool | join_voice_session {"mode": "chill"}
+[2026-05-26T02:43:35Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-05-26T02:43:35Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-05-26T02:49:05Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-05-26T02:49:05Z] [info] ambient_now_playing | meditation leberch
+[2026-05-26T02:52:03Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-05-26T02:52:03Z] [info] ambient_now_playing | calm my mind
+[2026-05-26T02:55:02Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-05-26T02:55:02Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-05-26T02:57:14Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T02:57:14Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T02:58:15Z] [info] inspirational_post | ✨ The present moment is enough to stand in.
+[2026-05-26T02:58:15Z] [info] quote_posted | The present moment is enough to stand in.
+[2026-05-26T03:02:54Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-05-26T03:02:54Z] [info] ambient_now_playing | mushroom temple drift
+[2026-05-26T03:10:58Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-05-26T03:10:58Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-05-26T03:13:35Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-05-26T03:13:35Z] [info] ambient_now_playing | ambient fallback
+[2026-05-26T03:17:17Z] [info] bot_ready | Garth#3905
+[2026-05-26T03:20:18Z] [info] inspirational_post | ✨ Stillness is not laziness — it's repair.
+[2026-05-26T03:20:18Z] [info] quote_posted | Stillness is not laziness — it's repair.
+[2026-05-26T04:00:13Z] [info] garth_tool | join_voice_session {"mode": "chill"}
+[2026-05-26T04:00:17Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-05-26T04:00:17Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-05-26T04:00:33Z] [info] garth_tool | pause_voice_session {}
+[2026-05-26T04:01:04Z] [info] garth_tool | pause_voice_session {}
+[2026-05-26T04:01:51Z] [info] garth_tool | resume_voice_session {"": {}}
+[2026-05-26T04:07:05Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T04:07:05Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T04:12:45Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-05-26T04:12:45Z] [info] ambient_now_playing | calm my mind
+[2026-05-26T04:15:44Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-05-26T04:15:44Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-05-26T04:18:22Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-05-26T04:18:22Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-05-26T04:20:33Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-05-26T04:20:33Z] [info] ambient_now_playing | ambient fallback
+[2026-05-26T04:21:50Z] [info] garth_tool | post_inspirational_quote {}
+[2026-05-26T04:21:51Z] [info] inspirational_post | ✨ Gentle consistency beats harsh intensity.
+[2026-05-26T04:21:51Z] [info] quote_posted | Gentle consistency beats harsh intensity.
+[2026-05-26T04:25:15Z] [info] garth_tool | post_inspirational_quote {"": {}}
+[2026-05-26T04:25:15Z] [info] inspirational_post | ✨ Breathe — you're allowed to pause.
+[2026-05-26T04:25:15Z] [info] quote_posted | Breathe — you're allowed to pause.
+[2026-05-26T04:25:54Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-05-26T04:25:54Z] [info] ambient_now_playing | meditation leberch
+[2026-05-26T04:27:22Z] [info] garth_tool | remember_about_user {"note": "User wants occasional journal sessions with Garth, noting thoughts and experiences."}
+[2026-05-26T04:28:52Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-05-26T04:28:52Z] [info] ambient_now_playing | mushroom temple drift
+[2026-05-26T04:36:56Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T04:36:56Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T04:39:19Z] [info] garth_tool | pause_voice_session {"": {}}
+[2026-05-26T04:43:57Z] [info] garth_tool | remember_about_user {"note": "User experienced an unexpected tear during conversation, wants to note this emotional moment."}
+[2026-05-26T07:20:18Z] [info] inspirational_post | ✨ Trust the pace your nervous system asks for.
+[2026-05-26T07:20:18Z] [info] quote_posted | Trust the pace your nervous system asks for.
+[2026-05-26T11:20:18Z] [info] inspirational_post | ✨ Stillness is not laziness — it's repair.
+[2026-05-26T11:20:18Z] [info] quote_posted | Stillness is not laziness — it's repair.
+[2026-05-26T15:20:19Z] [info] inspirational_post | ✨ Breathe — you're allowed to pause.
+[2026-05-26T15:20:19Z] [info] quote_posted | Breathe — you're allowed to pause.
+[2026-05-26T16:11:10Z] [info] garth_tool | join_voice_session {"mode": "chill"}
+[2026-05-26T16:11:15Z] [info] garth_tool | stop_voice_session {}
+[2026-05-26T16:11:17Z] [info] garth_tool | join_voice_session {"mode": "chill"}
+[2026-05-26T16:11:17Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-05-26T16:11:17Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-05-26T16:13:55Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-05-26T16:13:55Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-05-26T16:16:06Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T16:16:06Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T16:21:46Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-05-26T16:21:46Z] [info] ambient_now_playing | meditation leberch
+[2026-05-26T16:23:20Z] [info] garth_tool | send_dm {"message": "Hey Travis! Sending you good vibes and a calm, grounded start to your day. \ud83c\udf3f\u2728", "username":
+[2026-05-26T16:23:22Z] [info] dm_sent | to=550782786013757442 Hey Travis! Sending you good vibes and a calm, grounded star
+[2026-05-26T16:24:44Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-05-26T16:24:44Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-05-26T16:30:14Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-05-26T16:30:14Z] [info] ambient_now_playing | calm my mind
+[2026-05-26T16:33:14Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-05-26T16:33:14Z] [info] ambient_now_playing | mushroom temple drift
+[2026-05-26T16:41:18Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-05-26T16:41:18Z] [info] ambient_now_playing | ambient fallback
+[2026-05-26T16:46:38Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-05-26T16:46:38Z] [info] ambient_now_playing | calm my mind
+[2026-05-26T16:49:38Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-05-26T16:49:38Z] [info] ambient_now_playing | meditation leberch
+[2026-05-26T16:52:36Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T16:52:36Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T16:58:16Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-05-26T16:58:16Z] [info] ambient_now_playing | violet orbit
+[2026-05-26T17:03:52Z] [info] garth_tool | pause_voice_session {"": {}}
+[2026-05-26T19:20:19Z] [info] inspirational_post | ✨ Stillness is not laziness — it's repair.
+[2026-05-26T19:20:19Z] [info] quote_posted | Stillness is not laziness — it's repair.
+[2026-05-26T23:20:18Z] [info] inspirational_post | ✨ Small steps still move you forward.
+[2026-05-26T23:20:18Z] [info] quote_posted | Small steps still move you forward.

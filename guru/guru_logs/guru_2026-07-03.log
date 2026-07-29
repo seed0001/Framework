@@ -1,0 +1,67 @@
+[2026-07-03T02:57:46Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-03T05:02:36Z] [info] command | start user=531896743063846943
+[2026-07-03T05:02:37Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-03T05:02:37Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-03T05:05:22Z] [info] command | skip user=531896743063846943
+[2026-07-03T05:05:22Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-03T05:05:22Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-03T05:09:40Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-03T05:09:40Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-03T05:11:45Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-03T05:11:45Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-03T05:17:07Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-03T05:17:07Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-03T05:22:41Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-03T05:22:41Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-03T05:28:11Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-03T05:28:11Z] [info] ambient_now_playing | calm my mind
+[2026-07-03T05:31:10Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-03T05:31:10Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-03T05:42:26Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-03T05:42:26Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-03T05:49:05Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-03T05:49:05Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-03T05:51:42Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-03T05:51:42Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-03T05:56:59Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-03T05:56:59Z] [info] ambient_now_playing | ambient fallback
+[2026-07-03T06:02:20Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-03T06:02:20Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-03T06:05:41Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-03T06:05:41Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-03T06:10:56Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-03T06:10:56Z] [info] ambient_now_playing | violet orbit
+[2026-07-03T06:16:36Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-03T06:16:36Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-03T06:18:47Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-03T06:18:47Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-03T06:24:18Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-03T06:24:18Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-03T06:29:52Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-03T06:29:52Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-03T06:37:56Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-03T06:37:56Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-03T06:40:47Z] [info] command | pause user=531896743063846943
+[2026-07-03T06:57:46Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-03T10:24:06Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:06Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:07Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:07Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:07Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:07Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+[2026-07-03T10:24:22Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:22Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:22Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:22Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:22Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T10:24:22Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+[2026-07-03T10:57:46Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-03T14:57:46Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-03T18:27:04Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T18:27:04Z] [warn] garth_model_skip | openai/gpt-oss-20b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T18:27:04Z] [warn] garth_model_skip | qwen/qwen3-next-80b-a3b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T18:27:04Z] [warn] garth_model_skip | meta-llama/llama-3.3-70b-instruct:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T18:27:04Z] [warn] garth_model_skip | nvidia/nemotron-3-super-120b-a12b:free unavailable (Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}), trying next
+[2026-07-03T18:27:04Z] [error] garth_llm_error | Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+[2026-07-03T18:57:46Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-03T22:57:46Z] [info] quote_skipped | quotes_enabled is false

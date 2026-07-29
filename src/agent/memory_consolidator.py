@@ -426,13 +426,26 @@ class MemoryConsolidator:
                         # consolidator-derived one. Reinforce instead.
                         self.profile.reinforce(key)
                         continue
-                    self.profile.set(
+                    from src.memory_dedup import prepare_profile_fact_write
+
+                    decision = prepare_profile_fact_write(
+                        self.profile.user_id,
                         key,
                         f["fact"],
                         category=f["category"],
-                        source="consolidated",
                         confidence=cfg.extracted_confidence,
+                        source="consolidated",
+                    )
+                    if decision.action == "skip":
+                        continue
+                    self.profile.set(
+                        decision.key,
+                        decision.value,
+                        category=f["category"],
+                        source="consolidated",
+                        confidence=decision.confidence,
                         protected=False,
+                        _skip_dedup=True,
                     )
                     stats.facts_inserted += 1
                 except ValueError:

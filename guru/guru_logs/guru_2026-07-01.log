@@ -1,0 +1,196 @@
+[2026-07-01T00:41:42Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T00:42:50Z] [info] bot_ready | Garth#3905
+[2026-07-01T00:45:50Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T03:15:55Z] [info] bot_ready | Garth#3905
+[2026-07-01T03:18:55Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T04:09:14Z] [warn] garth_rate_limited | openai/gpt-oss-120b:free throttled, trying next
+[2026-07-01T04:09:14Z] [error] garth_llm_error | Error code: 404 - {'error': {'message': 'No endpoints found for openrouter/owl-alpha.', 'code': 404}, 'user_id': 'user_3Dn6KCTUZ5WcfEDiHmw1rpMLi9I'}
+[2026-07-01T07:18:55Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T11:18:55Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T15:18:55Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T16:44:21Z] [info] bot_ready | Garth#3905
+[2026-07-01T16:45:46Z] [warn] garth_model_skip | openai/gpt-oss-120b:free unavailable (rate-limited), trying next
+[2026-07-01T16:45:49Z] [info] garth_model_fallback | used fallback model openai/gpt-oss-20b:free
+[2026-07-01T16:47:21Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T16:51:04Z] [info] bot_ready | Garth#3905
+[2026-07-01T16:51:29Z] [info] command | start user=531896743063846943
+[2026-07-01T16:51:30Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-01T16:51:30Z] [info] ambient_now_playing | ambient fallback
+[2026-07-01T16:51:45Z] [info] command | skip user=531896743063846943
+[2026-07-01T16:51:46Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-01T16:51:46Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-01T16:53:51Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-01T16:53:51Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-01T16:54:04Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T16:59:06Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-01T16:59:06Z] [info] ambient_now_playing | calm my mind
+[2026-07-01T17:02:06Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-01T17:02:06Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-01T17:05:27Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-01T17:05:27Z] [info] ambient_now_playing | meditation leberch
+[2026-07-01T17:08:25Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-01T17:08:25Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-01T17:12:43Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-01T17:12:43Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-01T17:23:59Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-01T17:23:59Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-01T17:30:37Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-01T17:30:37Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-01T17:35:59Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-01T17:35:59Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-01T17:41:29Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-01T17:41:29Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-01T17:43:41Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-01T17:43:41Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-01T17:51:45Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-01T17:51:45Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-01T17:57:02Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-01T17:57:02Z] [info] ambient_now_playing | violet orbit
+[2026-07-01T18:02:42Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-01T18:02:42Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-01T18:08:16Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-01T18:08:16Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-01T18:10:22Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-01T18:10:22Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-01T18:13:42Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-01T18:13:42Z] [info] ambient_now_playing | calm my mind
+[2026-07-01T18:16:41Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-01T18:16:41Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-01T18:19:19Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-01T18:19:19Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-01T18:24:48Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-01T18:24:48Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-01T18:30:03Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-01T18:30:03Z] [info] ambient_now_playing | ambient fallback
+[2026-07-01T18:35:24Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-01T18:35:24Z] [info] ambient_now_playing | meditation leberch
+[2026-07-01T18:38:22Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-01T18:38:22Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-01T18:40:34Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-01T18:40:34Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-01T18:51:50Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-01T18:51:50Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-01T18:58:29Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-01T18:58:29Z] [info] ambient_now_playing | violet orbit
+[2026-07-01T19:04:09Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-01T19:04:09Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-01T19:12:13Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-01T19:12:13Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-01T19:17:30Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-01T19:17:30Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-01T19:19:36Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-01T19:19:36Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-01T19:25:10Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-01T19:25:10Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-01T19:30:32Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-01T19:30:32Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-01T19:36:02Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-01T19:36:02Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-01T19:38:39Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-01T19:38:39Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-01T19:44:09Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-01T19:44:09Z] [info] ambient_now_playing | meditation leberch
+[2026-07-01T19:47:07Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-01T19:47:07Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-01T19:50:27Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-01T19:50:27Z] [info] ambient_now_playing | ambient fallback
+[2026-07-01T19:55:48Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-01T19:55:48Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-01T20:02:26Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-01T20:02:26Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-01T20:06:44Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-01T20:06:44Z] [info] ambient_now_playing | violet orbit
+[2026-07-01T20:12:24Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-01T20:12:24Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-01T20:20:28Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-01T20:20:28Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-01T20:22:34Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-01T20:22:34Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-01T20:24:45Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-01T20:24:45Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-01T20:36:01Z] [info] ambient_pick | local:calm-my-mind.mp3
+[2026-07-01T20:36:01Z] [info] ambient_now_playing | calm my mind
+[2026-07-01T20:39:00Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-01T20:39:00Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-01T20:44:34Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-01T20:44:34Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-01T20:49:52Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-01T20:49:52Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-01T20:52:29Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-01T20:52:29Z] [info] ambient_now_playing | zen instrumental ambient
+[2026-07-01T20:54:04Z] [info] quote_skipped | quotes_enabled is false
+[2026-07-01T20:57:59Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-01T20:57:59Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-01T21:03:14Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-01T21:03:14Z] [info] ambient_now_playing | ambient fallback
+[2026-07-01T21:08:35Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-01T21:08:35Z] [info] ambient_now_playing | meditation leberch
+[2026-07-01T21:11:33Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-01T21:11:33Z] [info] ambient_now_playing | violet orbit
+[2026-07-01T21:17:13Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-01T21:17:13Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-01T21:23:51Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-01T21:23:51Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-01T21:28:09Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-01T21:28:09Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-01T21:33:39Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-01T21:33:39Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-01T21:36:59Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-01T21:36:59Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-01T21:39:42Z] [info] command | skip user=531896743063846943
+[2026-07-01T21:39:42Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-01T21:39:42Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-01T21:50:58Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-01T21:50:58Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-01T21:56:16Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-01T21:56:16Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-01T21:58:53Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-01T21:58:53Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-01T22:00:59Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-01T22:00:59Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-01T22:03:10Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-01T22:03:10Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-01T22:08:25Z] [info] ambient_pick | local:mushroom-temple-drift.mp3
+[2026-07-01T22:08:25Z] [info] ambient_now_playing | mushroom temple drift
+[2026-07-01T22:16:29Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-01T22:16:29Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-01T22:22:04Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-01T22:22:04Z] [info] ambient_now_playing | violet orbit
+[2026-07-01T22:27:44Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-01T22:27:44Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-01T22:32:02Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-01T22:32:02Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-01T22:38:40Z] [info] ambient_pick | local:spiritual-meditation-mountain.mp3
+[2026-07-01T22:38:40Z] [info] ambient_now_playing | spiritual meditation mountain
+[2026-07-01T22:44:11Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-01T22:44:11Z] [info] ambient_now_playing | meditation leberch
+[2026-07-01T22:47:09Z] [info] ambient_pick | local:ambient_fallback.mp3
+[2026-07-01T22:47:09Z] [info] ambient_now_playing | ambient fallback
+[2026-07-01T22:52:29Z] [info] ambient_pick | local:five-minute-royalty-calm.mp3
+[2026-07-01T22:52:29Z] [info] ambient_now_playing | five minute royalty calm
+[2026-07-01T22:57:51Z] [info] ambient_pick | local:relaxation-sleep-jean-angius.mp3
+[2026-07-01T22:57:51Z] [info] ambient_now_playing | relaxation sleep jean angius
+[2026-07-01T23:00:29Z] [info] ambient_pick | local:free-ambient-meditation.mp3
+[2026-07-01T23:00:29Z] [info] ambient_now_playing | free ambient meditation
+[2026-07-01T23:11:45Z] [info] ambient_pick | local:relaxing-piano-clavier.mp3
+[2026-07-01T23:11:45Z] [info] ambient_now_playing | relaxing piano clavier
+[2026-07-01T23:13:56Z] [info] ambient_pick | local:relax-five-minute-calm.mp3
+[2026-07-01T23:13:56Z] [info] ambient_now_playing | relax five minute calm
+[2026-07-01T23:19:14Z] [info] ambient_pick | local:positive-mood-ambient.mp3
+[2026-07-01T23:19:14Z] [info] ambient_now_playing | positive mood ambient
+[2026-07-01T23:24:29Z] [info] ambient_pick | local:lost-ambient-pads.mp3
+[2026-07-01T23:24:29Z] [info] ambient_now_playing | lost ambient pads
+[2026-07-01T23:27:49Z] [info] ambient_pick | local:violet-orbit.mp3
+[2026-07-01T23:27:49Z] [info] ambient_now_playing | violet orbit
+[2026-07-01T23:33:29Z] [info] ambient_pick | local:dreamcatcher-calm-ambient.mp3
+[2026-07-01T23:33:29Z] [info] ambient_now_playing | dreamcatcher calm ambient
+[2026-07-01T23:37:47Z] [info] ambient_pick | local:peaceful-background-calm.mp3
+[2026-07-01T23:37:47Z] [info] ambient_now_playing | peaceful background calm
+[2026-07-01T23:39:52Z] [info] ambient_pick | local:five-minute-relaxing-calm.mp3
+[2026-07-01T23:39:52Z] [info] ambient_now_playing | five minute relaxing calm
+[2026-07-01T23:46:31Z] [info] ambient_pick | local:meditation-leberch.mp3
+[2026-07-01T23:46:31Z] [info] ambient_now_playing | meditation leberch
+[2026-07-01T23:49:29Z] [info] ambient_pick | local:fragments-aerhead-ambient.mp3
+[2026-07-01T23:49:29Z] [info] ambient_now_playing | fragments aerhead ambient
+[2026-07-01T23:55:02Z] [info] ambient_pick | local:zen-instrumental-ambient.mp3
+[2026-07-01T23:55:03Z] [info] ambient_now_playing | zen instrumental ambient
